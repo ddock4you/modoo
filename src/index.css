@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* 디자인 토큰: Tailwind v4 @theme 기반 */
+@theme {
+  --color-brand: #16a34a; /* green-600 */
+  --color-brand-foreground: #ffffff;
+  --radius: 0.75rem; /* 12px */
+}
+
+/* 기본 레이아웃 헬퍼 */
+html, body, #root {
+  height: 100%;
+}
