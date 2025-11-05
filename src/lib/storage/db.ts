@@ -35,6 +35,7 @@ export interface ModooDB extends DBSchema {
       byPlantId: string;
       byType: "water" | "fertilize";
       byNextDueAt: number;
+      byActiveAndNextDueAt: [0 | 1, number]; // 복합 인덱스: [active, nextDueAt]
     };
   };
   taskEvents: {
@@ -83,42 +84,41 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 2로 설정 (기존 데이터 유지하면서 새 인덱스 추가 가능하도록)
-  dbInstance = await openDB<ModooDB>("modoo", 2, {
+  // 버전 1로 설정 (통합 스키마: 모든 기능 포함)
+  dbInstance = await openDB<ModooDB>("modoo", 1, {
     upgrade(db, oldVersion, newVersion, transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
 
-      // 버전별 마이그레이션
+      // 통합 마이그레이션: 버전 1에 모든 기능 포함
       if (oldVersion < 1) {
+        console.log("Creating database version 1 with complete schema");
+
         // Plants store
         const plantsStore = db.createObjectStore("plants", { keyPath: "id" });
         plantsStore.createIndex("byName", "name");
 
-        // Task Rules store
+        // Task Rules store - 모든 인덱스 포함
         const rulesStore = db.createObjectStore("taskRules", { keyPath: "id" });
         rulesStore.createIndex("byPlantId", "plantId");
         rulesStore.createIndex("byType", "type");
         rulesStore.createIndex("byNextDueAt", "nextDueAt");
+        rulesStore.createIndex("byActiveAndNextDueAt", ["active", "nextDueAt"]); // 복합 인덱스
 
-        // Task Events store
+        // Task Events store - 모든 인덱스 포함
         const eventsStore = db.createObjectStore("taskEvents", { keyPath: "id" });
         eventsStore.createIndex("byPlantId", "plantId");
         eventsStore.createIndex("byType", "type");
         eventsStore.createIndex("byDoneAt", "doneAt");
 
-        // Photos store
+        // Photos store - 모든 인덱스 포함
         const photosStore = db.createObjectStore("photos", { keyPath: "id" });
         photosStore.createIndex("byPlantId", "plantId");
         photosStore.createIndex("byCreatedAt", "createdAt");
 
         // Settings store
         db.createObjectStore("settings", { keyPath: "key" });
-      }
 
-      // 버전 2로 업그레이드 시 추가 로직 (현재는 없음 - 미래 확장을 위해)
-      if (oldVersion < 2) {
-        // 예: 새로운 인덱스 추가나 스키마 변경
-        console.log("Upgraded to version 2");
+        console.log("Successfully created database version 1 with all features");
       }
     },
     blocked(currentVersion, blockedVersion, event) {

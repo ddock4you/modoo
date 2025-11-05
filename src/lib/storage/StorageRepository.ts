@@ -123,14 +123,15 @@ export class IndexedDbRepository implements StorageRepository {
     await this.db.add("taskEvents", event);
   }
 
-  // Queries - 일단 빈 구현으로 시작
+  // Queries
   async getDueTasks(nowMs: number): Promise<Array<{ plant: Plant; rule: TaskRule }>> {
     const tx = this.db.transaction(["taskRules", "plants"], "readonly");
     const ruleStore = tx.objectStore("taskRules");
     const plantStore = tx.objectStore("plants");
 
-    const index = ruleStore.index("byNextDueAt");
-    const range = IDBKeyRange.upperBound(nowMs);
+    // 새로운 복합 인덱스 사용: [active=1, nextDueAt <= nowMs]
+    const index = ruleStore.index("byActiveAndNextDueAt");
+    const range = IDBKeyRange.bound([1, 0], [1, nowMs]); // active=1, nextDueAt <= nowMs
     const dueRules = await index.getAll(range);
 
     const result = await Promise.all(
