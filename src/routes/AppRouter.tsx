@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Plants } from "./pages/Plants";
 import { PlantDetail } from "./pages/PlantDetail";
 import { Settings } from "./pages/Settings";
+import { DebugDb } from "./pages/DebugDb";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
         <Settings />
       </MobileGuard>
     ),
+  },
+  {
+    path: "/_debug/db",
+    element: <DebugDb />,
   },
 ]);
 
