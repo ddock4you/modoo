@@ -2,13 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/StorageContext";
-import type {
-  Plant,
-  TaskRule,
-  TaskEvent,
-  Photo,
-  Settings as SettingsType,
-} from "../../domain/types";
+import type { PhotoMeta, SettingKV } from "../../domain/types";
 import { getDB } from "../../lib/storage/db";
 
 type StoreName = "plants" | "taskRules" | "taskEvents" | "photos" | "settings";
@@ -77,9 +71,17 @@ export function DebugDb() {
 
         // 인덱스 정보 수집
         const indexes: string[] = [];
-        if (storeName === "plants") indexes.push("byName");
-        else if (storeName === "taskRules") indexes.push("byPlantId", "byType", "byNextDueAt");
-        else if (storeName === "taskEvents") indexes.push("byPlantId", "byType", "byDoneAt");
+        if (storeName === "plants") indexes.push("byName", "byAdoptedAt", "byIsSensitive");
+        else if (storeName === "taskRules")
+          indexes.push(
+            "byPlantId",
+            "byType",
+            "byNextDueAt",
+            "byActiveAndNextDueAt",
+            "byPlantIdTypeActive"
+          );
+        else if (storeName === "taskEvents")
+          indexes.push("byPlantId", "byType", "byDoneAt", "byPlantIdAndDoneAt");
         else if (storeName === "photos") indexes.push("byPlantId", "byCreatedAt");
 
         stores.push({ name: storeName, count, indexes });

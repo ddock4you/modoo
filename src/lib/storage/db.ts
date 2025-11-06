@@ -19,6 +19,8 @@ export interface ModooDB extends DBSchema {
     };
     indexes: {
       byName: string;
+      byAdoptedAt: number;
+      byIsSensitive: boolean;
     };
   };
   // 물주기, 비료주기 등의 반복 작업 규칙 저장
@@ -27,7 +29,7 @@ export interface ModooDB extends DBSchema {
     value: {
       id: string; // 작업 규칙 고유 ID
       plantId: string; // 대상 식물 ID (FK)
-      type: "water" | "fertilize"; // 작업 유형
+      type: "water"; // 작업 유형
       intervalDays: number; // 반복 주기 (일수)
       lastDoneAt: number | null; // 마지막 수행 일시 (UNIX timestamp)
       nextDueAt: number; // 다음 예정 일시 (UNIX timestamp)
@@ -38,9 +40,10 @@ export interface ModooDB extends DBSchema {
     };
     indexes: {
       byPlantId: string;
-      byType: "water" | "fertilize";
+      byType: "water";
       byNextDueAt: number;
-      byActiveAndNextDueAt: [0 | 1, number]; // 복합 인덱스: [active, nextDueAt]
+      byActiveAndNextDueAt: [0 | 1, number];
+      byPlantIdTypeActive: [string, "water", 0 | 1];
     };
   };
   // 실제 수행된 작업(물주기, 비료 등)의 히스토리 저장
@@ -58,6 +61,7 @@ export interface ModooDB extends DBSchema {
       byPlantId: string;
       byType: "water";
       byDoneAt: number;
+      byPlantIdAndDoneAt: [string, number];
     };
   };
   // 식물 사진 메타데이터 및 파일 경로 저장 (실제 파일은 OPFS에 저장)
@@ -120,6 +124,8 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         // Plants store (완전한 필드 포함)
         const plantsStore = db.createObjectStore("plants", { keyPath: "id" });
         plantsStore.createIndex("byName", "name");
+        plantsStore.createIndex("byAdoptedAt", "adoptedAt");
+        plantsStore.createIndex("byIsSensitive", "isSensitive");
 
         // Task Rules store (완전한 필드 및 인덱스 포함)
         const rulesStore = db.createObjectStore("taskRules", { keyPath: "id" });
@@ -127,12 +133,14 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         rulesStore.createIndex("byType", "type");
         rulesStore.createIndex("byNextDueAt", "nextDueAt");
         rulesStore.createIndex("byActiveAndNextDueAt", ["active", "nextDueAt"]);
+        rulesStore.createIndex("byPlantIdTypeActive", ["plantId", "type", "active"]);
 
         // Task Events store (완전한 필드 포함)
         const eventsStore = db.createObjectStore("taskEvents", { keyPath: "id" });
         eventsStore.createIndex("byPlantId", "plantId");
         eventsStore.createIndex("byType", "type");
         eventsStore.createIndex("byDoneAt", "doneAt");
+        eventsStore.createIndex("byPlantIdAndDoneAt", ["plantId", "doneAt"]);
 
         // Photos store
         const photosStore = db.createObjectStore("photos", { keyPath: "id" });
