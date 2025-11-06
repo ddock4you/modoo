@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/StorageContext";
+import { useStorage } from "../../lib/storage/useStorage";
 import type { PhotoMeta, SettingKV } from "../../domain/types";
 import { getDB } from "../../lib/storage/db";
 
@@ -71,7 +71,7 @@ export function DebugDb() {
 
         // 인덱스 정보 수집
         const indexes: string[] = [];
-        if (storeName === "plants") indexes.push("byName", "byAdoptedAt", "byIsSensitive");
+        if (storeName === "plants") indexes.push("byName", "byAdoptedAt");
         else if (storeName === "taskRules")
           indexes.push(
             "byPlantId",

@@ -1,19 +1,10 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { IndexedDbRepository, type StorageRepository } from "./StorageRepository";
-import { getDB, initDB } from "./db";
-
-const StorageContext = createContext<StorageRepository | null>(null);
-
-export function useStorage() {
-  const storage = useContext(StorageContext);
-  if (!storage) {
-    throw new Error("useStorage must be used within a StorageProvider");
-  }
-  return storage;
-}
+import { useEffect, useState, type ReactNode } from "react";
+import { IndexedDbRepository } from "./StorageRepository";
+import { initDB } from "./db";
+import { StorageContext } from "./StorageContext";
 
 export function StorageProvider({ children }: { children: ReactNode }) {
-  const [storage, setStorage] = useState<StorageRepository | null>(null);
+  const [storage, setStorage] = useState<IndexedDbRepository | null>(null);
 
   useEffect(() => {
     initDB()

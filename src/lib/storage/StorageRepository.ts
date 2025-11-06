@@ -1,4 +1,4 @@
-import type { Plant, TaskEvent, TaskRule } from "../../domain/types";
+import type { Plant, TaskEvent, TaskRule, PhotoMeta } from "../../domain/types";
 import type { IDBPDatabase, ModooDB } from "./db";
 
 export interface StorageRepository {
@@ -16,6 +16,12 @@ export interface StorageRepository {
   // Task Events
   listTaskEvents(plantId?: string, type?: "water"): Promise<TaskEvent[]>;
   logTaskEvent(event: TaskEvent): Promise<void>;
+
+  // Photos
+  listPhotos(plantId?: string): Promise<PhotoMeta[]>;
+  getPhoto(id: string): Promise<PhotoMeta | undefined>;
+  upsertPhoto(photo: PhotoMeta): Promise<void>;
+  deletePhoto(id: string): Promise<void>;
 
   // Queries
   getDueTasks(nowMs: number): Promise<Array<{ plant: Plant; rule: TaskRule }>>;
@@ -140,5 +146,39 @@ export class IndexedDbRepository implements StorageRepository {
 
     await tx.done;
     return result.filter((item): item is { plant: Plant; rule: TaskRule } => item !== null);
+  }
+
+  // Photos
+  async listPhotos(plantId?: string): Promise<PhotoMeta[]> {
+    const tx = this.db.transaction("photos", "readonly");
+    const store = tx.objectStore("photos");
+
+    let photos: PhotoMeta[];
+
+    if (plantId) {
+      const index = store.index("byPlantId");
+      photos = await index.getAll(plantId);
+    } else {
+      photos = await store.getAll();
+    }
+
+    // 최신순 정렬
+    photos.sort((a, b) => b.createdAt - a.createdAt);
+
+    await tx.done;
+    return photos;
+  }
+
+  async getPhoto(id: string): Promise<PhotoMeta | undefined> {
+    const photo = await this.db.get("photos", id);
+    return photo;
+  }
+
+  async upsertPhoto(photo: PhotoMeta): Promise<void> {
+    await this.db.put("photos", photo);
+  }
+
+  async deletePhoto(id: string): Promise<void> {
+    await this.db.delete("photos", id);
   }
 }

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/StorageContext";
+import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
 import type { TaskRule, Plant } from "../../domain/types";
 

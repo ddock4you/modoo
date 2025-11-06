@@ -1,14 +1,18 @@
 import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/StorageContext";
+import { useStorage } from "../../lib/storage/useStorage";
+import { useMedia } from "../../lib/media/useMedia";
 import { updateRuleAfterTaskCompletion } from "../../domain/use-cases/calculateNextDue";
-import type { Plant, TaskRule, TaskEvent } from "../../domain/types";
+import type { Plant, TaskRule, TaskEvent, PhotoMeta } from "../../domain/types";
 import { generateId } from "../../domain/types";
 
 export function PlantDetail() {
   const { id } = useParams();
   const storage = useStorage();
+  const media = useMedia();
   const queryClient = useQueryClient();
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
 
   // 식물 정보 조회
   const {
@@ -34,6 +38,20 @@ export function PlantDetail() {
     queryFn: async (): Promise<TaskRule[]> => {
       if (!id) return [];
       return await storage.listTaskRules(id);
+    },
+    enabled: !!id,
+  });
+
+  // 식물 사진 조회
+  const {
+    data: photos = [],
+    isLoading: photosLoading,
+    error: photosError,
+  } = useQuery({
+    queryKey: ["photos", id],
+    queryFn: async (): Promise<PhotoMeta[]> => {
+      if (!id) return [];
+      return await storage.listPhotos(id);
     },
     enabled: !!id,
   });
@@ -65,6 +83,50 @@ export function PlantDetail() {
       queryClient.invalidateQueries({ queryKey: ["taskRules", id] });
       queryClient.invalidateQueries({ queryKey: ["dueTasks"] });
       queryClient.invalidateQueries({ queryKey: ["plant", id] });
+    },
+  });
+
+  // 사진 업로드 mutation
+  const uploadPhotoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!media || !id) throw new Error("Media store not available or invalid plant ID");
+
+      setUploadProgress(0); // 진행률 초기화
+
+      // 사진 저장 및 메타데이터 생성 (내부에서 압축 진행률 업데이트)
+      const photoMeta = await media.savePhoto(file, id, (progress: number) => {
+        setUploadProgress(progress);
+      });
+
+      // DB에 메타데이터 저장
+      await storage.upsertPhoto(photoMeta);
+
+      return photoMeta;
+    },
+    onSuccess: () => {
+      setUploadProgress(0); // 진행률 초기화
+      // 사진 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ["photos", id] });
+    },
+    onError: () => {
+      setUploadProgress(0); // 에러 시 진행률 초기화
+    },
+  });
+
+  // 사진 삭제 mutation
+  const deletePhotoMutation = useMutation({
+    mutationFn: async (photo: PhotoMeta) => {
+      if (!media) throw new Error("Media store not available");
+
+      // OPFS에서 파일 삭제
+      await media.remove(photo.uri, photo.thumbUri);
+
+      // DB에서 메타데이터 삭제
+      await storage.deletePhoto(photo.id);
+    },
+    onSuccess: () => {
+      // 사진 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ["photos", id] });
     },
   });
 
@@ -248,6 +310,177 @@ export function PlantDetail() {
           </div>
         )}
       </div>
+
+      {/* 사진 */}
+      <div className="mb-6">
+        <h2 className="font-semibold mb-3">사진</h2>
+
+        {/* 사진 업로드 */}
+        <div className="mb-4">
+          <label className="inline-block">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  uploadPhotoMutation.mutate(file);
+                }
+                // 같은 파일 재선택 가능하도록 초기화
+                e.target.value = "";
+              }}
+              disabled={uploadPhotoMutation.isPending || !media}
+            />
+            <div
+              className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                uploadPhotoMutation.isPending || !media ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              <span className="text-lg">📷</span>
+              <span className="text-sm font-medium">
+                {uploadPhotoMutation.isPending ? "압축 및 업로드 중..." : "사진 촬영/선택"}
+              </span>
+            </div>
+          </label>
+
+          {/* 업로드 진행률 표시 */}
+          {uploadPhotoMutation.isPending && uploadProgress > 0 && (
+            <div className="mt-2 w-full max-w-xs">
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <span>압축 진행률</span>
+                <span>{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
+          {!media && (
+            <p className="text-xs text-orange-600 mt-1">
+              브라우저가 사진 저장을 지원하지 않습니다.
+            </p>
+          )}
+        </div>
+
+        {/* 사진 목록 */}
+        {photosLoading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+          </div>
+        ) : photosError ? (
+          <p className="text-red-600 text-sm">사진을 불러오는데 실패했습니다.</p>
+        ) : photos.length === 0 ? (
+          <p className="text-gray-500 text-sm">등록된 사진이 없습니다.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {photos.map((photo) => (
+              <div key={photo.id} className="relative">
+                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                  {media ? (
+                    <PhotoThumbnail
+                      photo={photo}
+                      onDelete={() => deletePhotoMutation.mutate(photo)}
+                      isDeleting={deletePhotoMutation.isPending}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <span className="text-2xl">🖼️</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(photo.createdAt).toLocaleDateString("ko-KR")}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 사진 스켈레톤 컴포넌트
+function PhotoSkeleton() {
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="animate-pulse">
+        <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+      </div>
+    </div>
+  );
+}
+
+// 사진 썸네일 컴포넌트
+function PhotoThumbnail({
+  photo,
+  onDelete,
+  isDeleting,
+}: {
+  photo: PhotoMeta;
+  onDelete: () => void;
+  isDeleting: boolean;
+}) {
+  const media = useMedia();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let url: string | null = null;
+
+    if (media && "getThumbnailUrl" in media) {
+      // IndexedDBMediaStore의 썸네일 URL 가져오기
+      const mediaWithThumbnail = media as typeof media & {
+        getThumbnailUrl: (id: string) => Promise<string>;
+      };
+      mediaWithThumbnail
+        .getThumbnailUrl(photo.id)
+        .then((thumbnailUrl: string) => {
+          url = thumbnailUrl;
+          setImageUrl(thumbnailUrl);
+        })
+        .catch(() => setImageUrl(null))
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
+
+    // 컴포넌트 언마운트 시 Blob URL 정리
+    return () => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [media, photo.id]);
+
+  if (isLoading) {
+    return <PhotoSkeleton />;
+  }
+
+  if (!imageUrl) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-gray-400">
+        <span className="text-xl">❌</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative group">
+      <img src={imageUrl} alt="식물 사진" className="w-full h-full object-cover" />
+      <button
+        onClick={onDelete}
+        disabled={isDeleting}
+        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+      >
+        {isDeleting ? "…" : "×"}
+      </button>
     </div>
   );
 }

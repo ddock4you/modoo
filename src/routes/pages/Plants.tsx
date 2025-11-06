@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/StorageContext";
+import { useStorage } from "../../lib/storage/useStorage";
 import { generateId, type Plant } from "../../domain/types";
 import { useState } from "react";
 
@@ -70,8 +70,9 @@ export function Plants() {
       setShowAddForm(false);
       setNewPlantName("");
     },
-    onError: () => {
-      alert("식물 추가에 실패했습니다. 다시 시도해주세요.");
+    onError: (error) => {
+      alert(error.message);
+      // alert("식물 추가에 실패했습니다. 다시 시도해주세요.");
     },
   });
 

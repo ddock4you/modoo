@@ -20,7 +20,6 @@ export interface ModooDB extends DBSchema {
     indexes: {
       byName: string;
       byAdoptedAt: number;
-      byIsSensitive: boolean;
     };
   };
   // 물주기, 비료주기 등의 반복 작업 규칙 저장
@@ -94,6 +93,41 @@ export interface ModooDB extends DBSchema {
       byCreatedAt: number;
     };
   };
+  // 사진 Blob 데이터 저장 (IndexedDB Blob 방식)
+  photos_blobs: {
+    key: string;
+    value: {
+      id: string; // 사진 고유 ID
+      plantId: string; // 대상 식물 ID (FK)
+      originalBlob: Blob; // 원본 사진 Blob
+      thumbnailBlob: Blob; // 썸네일 Blob
+      metadata: {
+        id: string;
+        plantId: string;
+        uri: string; // Blob URL용 식별자 (실제로는 사용되지 않음)
+        thumbUri: string;
+        width: number;
+        height: number;
+        size: number;
+        createdAt: number;
+        updatedAt: number;
+        displayWidth?: number;
+        displayHeight?: number;
+        aspectRatio?: number;
+        cropArea?: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        };
+      };
+      createdAt: number; // 생성일시
+    };
+    indexes: {
+      byPlantId: string;
+      byCreatedAt: number;
+    };
+  };
   // 앱 설정 및 환경설정 저장 (키-값 형태)
   settings: {
     key: string;
@@ -111,8 +145,8 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 1로 설정 (완전한 스키마)
-  dbInstance = await openDB<ModooDB>("modoo", 1, {
+  // 버전 2로 설정 (Blob 기반 사진 저장 추가)
+  dbInstance = await openDB<ModooDB>("modoo", 2, {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     upgrade(db, oldVersion, newVersion, _transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
@@ -125,7 +159,6 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         const plantsStore = db.createObjectStore("plants", { keyPath: "id" });
         plantsStore.createIndex("byName", "name");
         plantsStore.createIndex("byAdoptedAt", "adoptedAt");
-        plantsStore.createIndex("byIsSensitive", "isSensitive");
 
         // Task Rules store (완전한 필드 및 인덱스 포함)
         const rulesStore = db.createObjectStore("taskRules", { keyPath: "id" });
@@ -151,6 +184,18 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         db.createObjectStore("settings", { keyPath: "key" });
 
         console.log("Successfully created database version 1 with complete schema");
+      }
+
+      // 버전 2: Blob 기반 사진 저장 추가
+      if (oldVersion < 2) {
+        console.log("Upgrading to version 2: Adding photos_blobs store");
+
+        // Photos Blobs store (Blob 데이터 저장용)
+        const photosBlobsStore = db.createObjectStore("photos_blobs", { keyPath: "id" });
+        photosBlobsStore.createIndex("byPlantId", "plantId");
+        photosBlobsStore.createIndex("byCreatedAt", "createdAt");
+
+        console.log("Successfully upgraded to database version 2");
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

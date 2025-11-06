@@ -66,8 +66,21 @@ export interface SettingKV {
   updatedAt: number;
 }
 
-// ID 생성 헬퍼 함수
-export const generateId = (): string => crypto.randomUUID();
+// ID 생성 헬퍼 함수 - crypto.randomUUID() 폴백 지원
+export const generateId = (): string => {
+  // crypto.randomUUID()가 지원되는 경우 사용
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  // 폴백: UUID v4 수동 생성 (RFC 4122 준수)
+  // 모바일 파이어폭스에선 crypto.randomUUID() 지원되지 않는 문제 확인
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 // 기본값 헬퍼 함수들
 export const createPlantDefaults = () => ({
