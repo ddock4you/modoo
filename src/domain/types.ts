@@ -30,7 +30,7 @@ export interface TaskRule {
 export interface TaskEvent {
   id: string;
   plantId: string;
-  type: TaskType;
+  type: "water"; // 우선은 물주기만 사용
   doneAt: number;
   note: string;
   createdAt: number;

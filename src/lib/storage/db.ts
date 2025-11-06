@@ -49,14 +49,14 @@ export interface ModooDB extends DBSchema {
     value: {
       id: string; // 작업 이벤트 고유 ID
       plantId: string; // 대상 식물 ID (FK)
-      type: "water" | "fertilize"; // 작업 유형
+      type: "water"; // 작업 유형 (우선은 물주기만 사용)
       doneAt: number; // 실제 수행 일시 (UNIX timestamp)
       note: string; // 수행 시 메모
       createdAt: number; // 생성일시
     };
     indexes: {
       byPlantId: string;
-      byType: "water" | "fertilize";
+      byType: "water";
       byDoneAt: number;
     };
   };
