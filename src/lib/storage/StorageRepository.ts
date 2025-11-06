@@ -1,4 +1,4 @@
-import type { Plant, TaskEvent, TaskRule, TaskType } from "../../domain/types";
+import type { Plant, TaskEvent, TaskRule } from "../../domain/types";
 import type { IDBPDatabase, ModooDB } from "./db";
 
 export interface StorageRepository {
@@ -14,7 +14,7 @@ export interface StorageRepository {
   deleteTaskRule(id: string): Promise<void>;
 
   // Task Events
-  listTaskEvents(plantId?: string, type?: TaskType): Promise<TaskEvent[]>;
+  listTaskEvents(plantId?: string, type?: "water"): Promise<TaskEvent[]>;
   logTaskEvent(event: TaskEvent): Promise<void>;
 
   // Queries
@@ -83,25 +83,30 @@ export class IndexedDbRepository implements StorageRepository {
     await this.db.delete("taskRules", id);
   }
 
-  // Task Events - 일단 빈 구현으로 시작
-  async listTaskEvents(plantId?: string, type?: TaskType): Promise<TaskEvent[]> {
+  // Task Events
+  async listTaskEvents(plantId?: string, type?: "water"): Promise<TaskEvent[]> {
     const tx = this.db.transaction("taskEvents", "readonly");
     const store = tx.objectStore("taskEvents");
 
     let events: TaskEvent[];
 
     if (plantId && type) {
+      // 식물별 + 유형별 필터링 (복합 인덱스 사용)
       const index = store.index("byPlantId");
       const allEvents = await index.getAll(plantId);
       events = allEvents.filter((event) => event.type === type);
     } else if (plantId) {
+      // 식물별 히스토리 조회
       const index = store.index("byPlantId");
       events = await index.getAll(plantId);
     } else if (type) {
+      // 유형별 히스토리 조회
       const index = store.index("byType");
       events = await index.getAll(type);
     } else {
+      // 전체 히스토리 조회 (최근순 정렬)
       events = await store.getAll();
+      events.sort((a, b) => b.doneAt - a.doneAt); // 최신순 정렬
     }
 
     await tx.done;
