@@ -1,11 +1,253 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStorage } from "../../lib/storage/StorageContext";
+import { updateRuleAfterTaskCompletion } from "../../domain/use-cases/calculateNextDue";
+import type { Plant, TaskRule, TaskEvent } from "../../domain/types";
+import { generateId } from "../../domain/types";
 
 export function PlantDetail() {
   const { id } = useParams();
+  const storage = useStorage();
+  const queryClient = useQueryClient();
+
+  // 식물 정보 조회
+  const {
+    data: plant,
+    isLoading: plantLoading,
+    error: plantError,
+  } = useQuery({
+    queryKey: ["plant", id],
+    queryFn: async (): Promise<Plant | undefined> => {
+      if (!id) return undefined;
+      return await storage.getPlant(id);
+    },
+    enabled: !!id,
+  });
+
+  // 식물의 작업 규칙 조회
+  const {
+    data: taskRules = [],
+    isLoading: rulesLoading,
+    error: rulesError,
+  } = useQuery({
+    queryKey: ["taskRules", id],
+    queryFn: async (): Promise<TaskRule[]> => {
+      if (!id) return [];
+      return await storage.listTaskRules(id);
+    },
+    enabled: !!id,
+  });
+
+  // 작업 완료 mutation
+  const completeTaskMutation = useMutation({
+    mutationFn: async ({ rule }: { rule: TaskRule }) => {
+      const now = Date.now();
+
+      // TaskEvent 생성 및 저장
+      const taskEvent: TaskEvent = {
+        id: generateId(),
+        plantId: rule.plantId,
+        type: rule.type,
+        doneAt: now,
+        note: "",
+        createdAt: now,
+      };
+      await storage.logTaskEvent(taskEvent);
+
+      // TaskRule 갱신
+      const updatedRule = updateRuleAfterTaskCompletion(rule);
+      await storage.upsertTaskRule(updatedRule);
+
+      return { taskEvent, updatedRule };
+    },
+    onSuccess: () => {
+      // 관련 쿼리들을 무효화하여 UI 갱신
+      queryClient.invalidateQueries({ queryKey: ["taskRules", id] });
+      queryClient.invalidateQueries({ queryKey: ["dueTasks"] });
+      queryClient.invalidateQueries({ queryKey: ["plant", id] });
+    },
+  });
+
+  if (!id) {
+    return (
+      <div className="min-h-screen bg-white text-neutral-900 p-4">
+        <p className="text-red-600">식물 ID가 필요합니다.</p>
+      </div>
+    );
+  }
+
+  if (plantLoading) {
+    return (
+      <div className="min-h-screen bg-white text-neutral-900 p-4">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <p className="text-gray-600">식물 정보를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (plantError || !plant) {
+    return (
+      <div className="min-h-screen bg-white text-neutral-900 p-4">
+        <div className="text-center py-8">
+          <p className="text-red-600">식물을 찾을 수 없습니다.</p>
+          <Link to="/plants" className="text-blue-600 hover:underline mt-2 inline-block">
+            식물 목록으로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatHumidity = (humidity: Plant["humidity"]) => {
+    if (!humidity) return "정보 없음";
+    return `${humidity.min}% - ${humidity.max}%`;
+  };
+
+  const formatTemperature = (temperature: Plant["temperature"]) => {
+    if (!temperature) return "정보 없음";
+    return `${temperature.min}°C - ${temperature.max}°C`;
+  };
+
+  const formatLightLevel = (lightLevel: Plant["lightLevel"]) => {
+    switch (lightLevel) {
+      case "low":
+        return "약한 빛";
+      case "medium":
+        return "중간 빛";
+      case "high":
+        return "강한 빛";
+      default:
+        return "정보 없음";
+    }
+  };
+
+  const formatNextDue = (nextDueAt: number) => {
+    const now = Date.now();
+    const diffMs = nextDueAt - now;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return `${Math.abs(diffDays)}일 지남`;
+    } else if (diffDays === 0) {
+      return "오늘";
+    } else {
+      return `${diffDays}일 후`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white text-neutral-900 p-4">
-      <h1 className="text-lg font-semibold mb-2">Plant Detail</h1>
-      <p className="text-sm text-neutral-600">id: {id}</p>
+      {/* 헤더 */}
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/plants" className="text-blue-600 hover:underline">
+          ← 식물 목록
+        </Link>
+        <h1 className="text-lg font-semibold">{plant.name}</h1>
+        <div className="w-16"></div> {/* 균형 맞추기용 */}
+      </div>
+
+      {/* 식물 기본 정보 */}
+      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+        <h2 className="font-semibold mb-3">기본 정보</h2>
+        <div className="space-y-2 text-sm">
+          <div>
+            <span className="font-medium">입양일:</span> {formatDate(plant.adoptedAt)}
+          </div>
+          {plant.humidity && (
+            <div>
+              <span className="font-medium">습도:</span> {formatHumidity(plant.humidity)}
+            </div>
+          )}
+          {plant.temperature && (
+            <div>
+              <span className="font-medium">온도:</span> {formatTemperature(plant.temperature)}
+            </div>
+          )}
+          {plant.lightLevel && (
+            <div>
+              <span className="font-medium">채광량:</span> {formatLightLevel(plant.lightLevel)}
+            </div>
+          )}
+          {plant.isSensitive && (
+            <div>
+              <span className="font-medium text-orange-600">주의:</span> 예민한 식물입니다
+            </div>
+          )}
+          {plant.notes && (
+            <div>
+              <span className="font-medium">메모:</span> {plant.notes}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 작업 규칙 */}
+      <div className="mb-6">
+        <h2 className="font-semibold mb-3">작업 규칙</h2>
+        {rulesLoading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+          </div>
+        ) : rulesError ? (
+          <p className="text-red-600 text-sm">규칙을 불러오는데 실패했습니다.</p>
+        ) : taskRules.length === 0 ? (
+          <p className="text-gray-500 text-sm">설정된 작업 규칙이 없습니다.</p>
+        ) : (
+          <div className="space-y-3">
+            {taskRules.map((rule) => (
+              <div
+                key={rule.id}
+                className={`border rounded-lg p-3 ${
+                  rule.active === 0
+                    ? "border-gray-200 bg-gray-50"
+                    : rule.nextDueAt < Date.now()
+                    ? "border-red-200 bg-red-50"
+                    : "border-green-200 bg-green-50"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{rule.type === "water" ? "💧" : "🌱"}</span>
+                      <span className="font-medium">
+                        {rule.type === "water" ? "물주기" : "비료주기"}
+                      </span>
+                      {rule.active === 0 && (
+                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                          비활성
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      {rule.intervalDays}일마다 • 다음: {formatNextDue(rule.nextDueAt)}
+                    </div>
+                    {rule.note && <div className="text-xs text-gray-500 mt-1">{rule.note}</div>}
+                  </div>
+                  {rule.active === 1 && (
+                    <button
+                      onClick={() => completeTaskMutation.mutate({ rule })}
+                      disabled={completeTaskMutation.isPending}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {completeTaskMutation.isPending ? "처리중..." : "완료하기"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
