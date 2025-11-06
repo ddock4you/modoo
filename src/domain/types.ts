@@ -1,4 +1,4 @@
-export type TaskType = "water" | "fertilize";
+export type TaskType = "water";
 
 export interface Plant {
   id: string;

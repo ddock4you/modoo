@@ -3,7 +3,7 @@ import type { IDBPDatabase, ModooDB } from "./db";
 
 export interface StorageRepository {
   // Plants
-  listPlants(params?: { query?: string; tag?: string }): Promise<Plant[]>;
+  listPlants(params?: { query?: string }): Promise<Plant[]>;
   getPlant(id: string): Promise<Plant | undefined>;
   upsertPlant(plant: Plant): Promise<void>;
   deletePlant(id: string): Promise<void>;
@@ -25,7 +25,7 @@ export class IndexedDbRepository implements StorageRepository {
   constructor(private db: IDBPDatabase<ModooDB>) {}
 
   // Plants
-  async listPlants(params?: { query?: string; tag?: string }): Promise<Plant[]> {
+  async listPlants(params?: { query?: string }): Promise<Plant[]> {
     const tx = this.db.transaction("plants", "readonly");
     const store = tx.objectStore("plants");
 
@@ -36,17 +36,6 @@ export class IndexedDbRepository implements StorageRepository {
       const index = store.index("byName");
       const range = IDBKeyRange.bound(params.query, params.query + "\uffff");
       plants = await index.getAll(range);
-    } else if (params?.tag) {
-      // 태그로 필터링 (JSON 문자열에서 검색)
-      const allPlants = await store.getAll();
-      plants = allPlants.filter((plant) => {
-        try {
-          const tags = JSON.parse(plant.tags);
-          return Array.isArray(tags) && tags.includes(params.tag);
-        } catch {
-          return false;
-        }
-      });
     } else {
       plants = await store.getAll();
     }
