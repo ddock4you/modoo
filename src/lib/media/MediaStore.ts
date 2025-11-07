@@ -40,6 +40,20 @@ export interface MediaStore {
   getUrl(photoId: string): Promise<string>;
 
   /**
+   * 원본 사진 Blob 가져오기
+   * @param photoId 사진 ID
+   * @returns 사진 Blob 데이터
+   */
+  getBlob(photoId: string): Promise<Blob>;
+
+  /**
+   * 사진 Blob 직접 저장 (복원용)
+   * @param photoId 사진 ID
+   * @param blob 사진 Blob 데이터
+   */
+  saveBlob(photoId: string, blob: Blob): Promise<void>;
+
+  /**
    * 썸네일 URL 생성
    * @param photoId 사진 ID
    * @returns 브라우저에서 접근 가능한 썸네일 URL
@@ -58,6 +72,11 @@ export interface MediaStore {
    * 추후 구현 예정
    */
   cleanup?(): Promise<void>;
+
+  /**
+   * 모든 데이터 삭제 (복원용)
+   */
+  clearAll?(): Promise<void>;
 }
 
 /**

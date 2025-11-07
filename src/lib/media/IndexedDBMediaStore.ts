@@ -152,6 +152,79 @@ export class IndexedDBMediaStore implements MediaStore {
   }
 
   /**
+   * 원본 사진 Blob 가져오기
+   */
+  async getBlob(photoId: string): Promise<Blob> {
+    const db = getDB();
+    if (!db) throw new Error("Database not initialized");
+
+    try {
+      const record = await db.get("photos_blobs", photoId);
+      if (!record) {
+        throw new Error(`Photo not found: ${photoId}`);
+      }
+
+      return record.originalBlob;
+    } catch (error) {
+      console.error("Failed to get photo blob:", error);
+      throw new Error("사진 데이터를 가져올 수 없습니다");
+    }
+  }
+
+  /**
+   * 사진 Blob 직접 저장 (복원용)
+   */
+  async saveBlob(photoId: string, blob: Blob): Promise<void> {
+    const db = getDB();
+    if (!db) throw new Error("Database not initialized");
+
+    try {
+      // 복원용 기본 메타데이터 생성
+      const now = Date.now();
+      const blobData = {
+        id: photoId,
+        plantId: "", // 복원 시에는 나중에 업데이트됨
+        originalBlob: blob,
+        thumbnailBlob: blob, // 임시로 원본 사용 (썸네일 생성은 나중에)
+        metadata: {
+          id: photoId,
+          plantId: "",
+          uri: `blob:${photoId}`,
+          thumbUri: `thumb:${photoId}`,
+          width: 0, // 복원 시에는 이미지 분석을 하지 않음
+          height: 0,
+          size: blob.size,
+          createdAt: now,
+          updatedAt: now,
+        } as any, // 타입 단언으로 임시 해결
+        createdAt: now,
+      };
+
+      await db.put("photos_blobs", blobData);
+    } catch (error) {
+      console.error("Failed to save photo blob:", error);
+      throw new Error("사진 데이터를 저장할 수 없습니다");
+    }
+  }
+
+  /**
+   * 모든 데이터 삭제 (복원용)
+   */
+  async clearAll(): Promise<void> {
+    const db = getDB();
+    if (!db) throw new Error("Database not initialized");
+
+    try {
+      const tx = db.transaction("photos_blobs", "readwrite");
+      await tx.objectStore("photos_blobs").clear();
+      await tx.done;
+    } catch (error) {
+      console.error("Failed to clear media store:", error);
+      throw new Error("미디어 저장소 정리 실패");
+    }
+  }
+
+  /**
    * Blob URL 생성
    */
   async getUrl(photoId: string): Promise<string> {
