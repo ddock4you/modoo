@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
+import { MobileNavigation } from "../../components/mobile-navigation";
 import type { TaskRule, Plant } from "../../domain/types";
 
 interface DueTask {
@@ -71,56 +72,60 @@ export function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
+      <div className="pb-16 bg-background text-foreground p-4">
         <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-600">작업 목록을 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">작업 목록을 불러오는 중...</p>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
+      <div className="pb-16 bg-background text-foreground p-4">
         <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
         <div className="text-center py-8">
-          <p className="text-red-600">작업 목록을 불러오는데 실패했습니다.</p>
+          <p className="text-destructive">작업 목록을 불러오는데 실패했습니다.</p>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 p-4">
+    <div className="pb-16 bg-background text-foreground p-4">
       <h1 className="text-lg font-semibold mb-4">Dashboard</h1>
 
       {/* Overdue Tasks */}
       {overdueTasks.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-md font-semibold text-red-600 mb-3">
+          <h2 className="text-md font-semibold text-destructive mb-3">
             ⚠️ 지연된 작업 ({overdueTasks.length})
           </h2>
           <div className="space-y-2">
             {overdueTasks.map(({ plant, rule }) => (
               <div
                 key={`${plant.id}-${rule.id}`}
-                className="border border-red-200 rounded-lg p-3 bg-red-50"
+                className="border border-destructive/20 rounded-lg p-3 bg-destructive/5"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <Link
                       to={`/plants/${plant.id}`}
-                      className="font-medium text-red-800 hover:underline"
+                      className="font-medium text-destructive hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
                       {plant.name}
                     </Link>
-                    <div className="text-sm text-red-600 mt-1">
+                    <div className="text-sm text-destructive/80 mt-1">
                       {rule.type === "water" ? "💧 물주기" : "🌱 비료주기"} •{" "}
                       {formatOverdueTime(rule.nextDueAt)}
                     </div>
-                    {rule.note && <div className="text-xs text-red-500 mt-1">{rule.note}</div>}
+                    {rule.note && (
+                      <div className="text-xs text-destructive/60 mt-1">{rule.note}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -131,11 +136,11 @@ export function Dashboard() {
 
       {/* Today's Tasks */}
       <div className="mb-6">
-        <h2 className="text-md font-semibold text-blue-600 mb-3">
+        <h2 className="text-md font-semibold text-primary mb-3">
           📅 오늘 할 작업 ({todayTasks.length})
         </h2>
         {todayTasks.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="text-center py-8 text-muted-foreground">
             <p>오늘 할 작업이 없습니다.</p>
             <p className="text-sm mt-2">식물을 등록하고 작업 규칙을 설정해보세요!</p>
           </div>
@@ -144,18 +149,23 @@ export function Dashboard() {
             {todayTasks.map(({ plant, rule }) => (
               <div
                 key={`${plant.id}-${rule.id}`}
-                className="border rounded-lg p-3 hover:bg-gray-50"
+                className="border rounded-lg p-3 hover:bg-accent hover:text-accent-foreground transition-colors"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <Link to={`/plants/${plant.id}`} className="font-medium hover:underline">
+                    <Link
+                      to={`/plants/${plant.id}`}
+                      className="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
                       {plant.name}
                     </Link>
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-muted-foreground mt-1">
                       {rule.type === "water" ? "💧 물주기" : "🌱 비료주기"} •{" "}
                       {formatTimeRemaining(rule.nextDueAt)}
                     </div>
-                    {rule.note && <div className="text-xs text-gray-500 mt-1">{rule.note}</div>}
+                    {rule.note && (
+                      <div className="text-xs text-muted-foreground/80 mt-1">{rule.note}</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -168,16 +178,23 @@ export function Dashboard() {
       <div className="border-t pt-4">
         <h2 className="text-md font-semibold mb-3">빠른 작업</h2>
         <div className="grid grid-cols-2 gap-3">
-          <Link to="/plants" className="p-3 border rounded-lg text-center hover:bg-gray-50">
+          <Link
+            to="/plants"
+            className="p-3 border rounded-lg text-center hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             <div className="text-2xl mb-1">🌱</div>
             <div className="text-sm font-medium">식물 관리</div>
           </Link>
-          <Link to="/settings" className="p-3 border rounded-lg text-center hover:bg-gray-50">
+          <Link
+            to="/settings"
+            className="p-3 border rounded-lg text-center hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             <div className="text-2xl mb-1">⚙️</div>
             <div className="text-sm font-medium">설정</div>
           </Link>
         </div>
       </div>
+      <MobileNavigation />
     </div>
   );
 }

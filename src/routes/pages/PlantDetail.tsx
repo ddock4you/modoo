@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { useMedia } from "../../lib/media/useMedia";
+import { MobileNavigation } from "../../components/mobile-navigation";
+import { Button } from "../../components/ui/button";
 import { updateRuleAfterTaskCompletion } from "../../domain/use-cases/calculateNextDue";
 import type { Plant, TaskRule, TaskEvent, PhotoMeta } from "../../domain/types";
 import { generateId } from "../../domain/types";
@@ -132,32 +134,38 @@ export function PlantDetail() {
 
   if (!id) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
-        <p className="text-red-600">식물 ID가 필요합니다.</p>
+      <div className="pb-16 bg-background text-foreground p-4">
+        <p className="text-destructive">식물 ID가 필요합니다.</p>
+        <MobileNavigation />
       </div>
     );
   }
 
   if (plantLoading) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
+      <div className="pb-16 bg-background text-foreground p-4">
         <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-600">식물 정보를 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">식물 정보를 불러오는 중...</p>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
 
   if (plantError || !plant) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
+      <div className="pb-16 bg-background text-foreground p-4">
         <div className="text-center py-8">
-          <p className="text-red-600">식물을 찾을 수 없습니다.</p>
-          <Link to="/plants" className="text-blue-600 hover:underline mt-2 inline-block">
+          <p className="text-destructive">식물을 찾을 수 없습니다.</p>
+          <Link
+            to="/plants"
+            className="text-primary hover:underline mt-2 inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             식물 목록으로 돌아가기
           </Link>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
@@ -208,10 +216,13 @@ export function PlantDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 p-4">
+    <div className="pb-16 bg-background text-foreground p-4">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
-        <Link to="/plants" className="text-blue-600 hover:underline">
+        <Link
+          to="/plants"
+          className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           ← 식물 목록
         </Link>
         <h1 className="text-lg font-semibold">{plant.name}</h1>
@@ -219,7 +230,7 @@ export function PlantDetail() {
       </div>
 
       {/* 식물 기본 정보 */}
-      <div className="bg-gray-50 rounded-lg p-4 mb-6">
+      <div className="bg-muted/50 rounded-lg p-4 mb-6">
         <h2 className="font-semibold mb-3">기본 정보</h2>
         <div className="space-y-2 text-sm">
           <div>
@@ -242,7 +253,7 @@ export function PlantDetail() {
           )}
           {plant.isSensitive && (
             <div>
-              <span className="font-medium text-orange-600">주의:</span> 예민한 식물입니다
+              <span className="font-medium text-destructive">주의:</span> 예민한 식물입니다
             </div>
           )}
           {plant.notes && (
@@ -258,12 +269,12 @@ export function PlantDetail() {
         <h2 className="font-semibold mb-3">작업 규칙</h2>
         {rulesLoading ? (
           <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
           </div>
         ) : rulesError ? (
-          <p className="text-red-600 text-sm">규칙을 불러오는데 실패했습니다.</p>
+          <p className="text-destructive text-sm">규칙을 불러오는데 실패했습니다.</p>
         ) : taskRules.length === 0 ? (
-          <p className="text-gray-500 text-sm">설정된 작업 규칙이 없습니다.</p>
+          <p className="text-muted-foreground text-sm">설정된 작업 규칙이 없습니다.</p>
         ) : (
           <div className="space-y-3">
             {taskRules.map((rule) => (
@@ -271,10 +282,10 @@ export function PlantDetail() {
                 key={rule.id}
                 className={`border rounded-lg p-3 ${
                   rule.active === 0
-                    ? "border-gray-200 bg-gray-50"
+                    ? "border-muted bg-muted/50"
                     : rule.nextDueAt < Date.now()
-                    ? "border-red-200 bg-red-50"
-                    : "border-green-200 bg-green-50"
+                    ? "border-destructive/20 bg-destructive/5"
+                    : "border-primary/20 bg-primary/5"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -285,24 +296,26 @@ export function PlantDetail() {
                         {rule.type === "water" ? "물주기" : "비료주기"}
                       </span>
                       {rule.active === 0 && (
-                        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
                           비활성
                         </span>
                       )}
                     </div>
-                    <div className="text-sm text-gray-600 mt-1">
+                    <div className="text-sm text-muted-foreground mt-1">
                       {rule.intervalDays}일마다 • 다음: {formatNextDue(rule.nextDueAt)}
                     </div>
-                    {rule.note && <div className="text-xs text-gray-500 mt-1">{rule.note}</div>}
+                    {rule.note && (
+                      <div className="text-xs text-muted-foreground/80 mt-1">{rule.note}</div>
+                    )}
                   </div>
                   {rule.active === 1 && (
-                    <button
+                    <Button
                       onClick={() => completeTaskMutation.mutate({ rule })}
                       disabled={completeTaskMutation.isPending}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      size="sm"
                     >
                       {completeTaskMutation.isPending ? "처리중..." : "완료하기"}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -332,11 +345,19 @@ export function PlantDetail() {
                 e.target.value = "";
               }}
               disabled={uploadPhotoMutation.isPending || !media}
+              aria-label="식물 사진 촬영 또는 갤러리에서 선택"
             />
             <div
-              className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+              className={`inline-flex items-center gap-2 px-4 py-2 border rounded-lg cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 uploadPhotoMutation.isPending || !media ? "opacity-50 cursor-not-allowed" : ""
               }`}
+              role="button"
+              aria-label={
+                uploadPhotoMutation.isPending
+                  ? "사진 압축 및 업로드 진행 중"
+                  : "식물 사진 촬영 또는 갤러리에서 선택"
+              }
+              aria-disabled={uploadPhotoMutation.isPending || !media}
             >
               <span className="text-lg">📷</span>
               <span className="text-sm font-medium">
@@ -348,13 +369,20 @@ export function PlantDetail() {
           {/* 업로드 진행률 표시 */}
           {uploadPhotoMutation.isPending && uploadProgress > 0 && (
             <div className="mt-2 w-full max-w-xs">
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <span>압축 진행률</span>
                 <span>{Math.round(uploadProgress)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="w-full bg-muted rounded-full h-2"
+                role="progressbar"
+                aria-valuenow={Math.round(uploadProgress)}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label="사진 압축 진행률"
+              >
                 <div
-                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
@@ -362,7 +390,7 @@ export function PlantDetail() {
           )}
 
           {!media && (
-            <p className="text-xs text-orange-600 mt-1">
+            <p className="text-xs text-destructive mt-1">
               브라우저가 사진 저장을 지원하지 않습니다.
             </p>
           )}
@@ -371,17 +399,17 @@ export function PlantDetail() {
         {/* 사진 목록 */}
         {photosLoading ? (
           <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
           </div>
         ) : photosError ? (
-          <p className="text-red-600 text-sm">사진을 불러오는데 실패했습니다.</p>
+          <p className="text-destructive text-sm">사진을 불러오는데 실패했습니다.</p>
         ) : photos.length === 0 ? (
-          <p className="text-gray-500 text-sm">등록된 사진이 없습니다.</p>
+          <p className="text-muted-foreground text-sm">등록된 사진이 없습니다.</p>
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {photos.map((photo) => (
               <div key={photo.id} className="relative">
-                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                <div className="aspect-square bg-muted rounded-lg overflow-hidden">
                   {media ? (
                     <PhotoThumbnail
                       photo={photo}
@@ -394,7 +422,7 @@ export function PlantDetail() {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   {new Date(photo.createdAt).toLocaleDateString("ko-KR")}
                 </div>
               </div>
@@ -402,6 +430,7 @@ export function PlantDetail() {
           </div>
         )}
       </div>
+      <MobileNavigation />
     </div>
   );
 }
@@ -411,7 +440,7 @@ function PhotoSkeleton() {
   return (
     <div className="w-full h-full flex items-center justify-center">
       <div className="animate-pulse">
-        <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+        <div className="w-8 h-8 bg-muted rounded-full"></div>
       </div>
     </div>
   );
@@ -465,7 +494,7 @@ function PhotoThumbnail({
 
   if (!imageUrl) {
     return (
-      <div className="w-full h-full flex items-center justify-center text-gray-400">
+      <div className="w-full h-full flex items-center justify-center text-muted-foreground">
         <span className="text-xl">❌</span>
       </div>
     );
@@ -477,7 +506,8 @@ function PhotoThumbnail({
       <button
         onClick={onDelete}
         disabled={isDeleting}
-        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
+        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        aria-label={isDeleting ? "사진 삭제 중" : "사진 삭제"}
       >
         {isDeleting ? "…" : "×"}
       </button>

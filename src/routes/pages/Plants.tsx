@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
+import { MobileNavigation } from "../../components/mobile-navigation";
+import { Button } from "../../components/ui/button";
 import { generateId, type Plant } from "../../domain/types";
 import { useState } from "react";
 
@@ -127,73 +129,71 @@ export function Plants() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
+      <div className="pb-16 bg-background text-foreground p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p className="text-gray-600">식물 목록을 불러오는 중...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">식물 목록을 불러오는 중...</p>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white text-neutral-900 p-4">
-        <div className="text-center text-red-600">
+      <div className="pb-16 bg-background text-foreground p-4">
+        <div className="text-center text-destructive">
           <p>식물 목록을 불러오는데 실패했습니다.</p>
-          <button
+          <Button
             onClick={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
-            className="mt-2 px-4 py-2 bg-red-500 text-white rounded"
+            variant="destructive"
+            className="mt-2"
           >
             다시 시도
-          </button>
+          </Button>
         </div>
+        <MobileNavigation />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 p-4">
+    <div className="pb-16 bg-background text-foreground p-4">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-semibold">Plants</h1>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="rounded-[var(--radius)] bg-brand text-[--color-brand-foreground] px-3 py-2 text-sm"
-        >
+        <Button onClick={() => setShowAddForm(true)} size="sm">
           새 식물 추가
-        </button>
+        </Button>
       </div>
 
       {showAddForm && (
-        <div className="mb-4 p-4 border rounded-lg bg-gray-50">
+        <div className="mb-4 p-4 border rounded-lg bg-muted/50">
           <h2 className="text-md font-semibold mb-2">새 식물 추가</h2>
           <form onSubmit={handleAddPlant} className="space-y-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">이름 *</label>
+              <label className="block text-sm font-medium mb-1">이름 *</label>
               <input
                 type="text"
                 value={newPlantName}
                 onChange={(e) => setNewPlantName(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="식물 이름"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                키우기 시작한 날짜
-              </label>
+              <label className="block text-sm font-medium mb-1">키우기 시작한 날짜</label>
               <input
                 type="date"
                 value={adoptedDate}
                 onChange={(e) => setAdoptedDate(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">물주기 주기 *</label>
+              <label className="block text-sm font-medium mb-1">물주기 주기 *</label>
               <select
-                className="w-full px-3 py-2 border rounded"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={intervalDays}
                 onChange={(e) => setIntervalDays(e.target.value)}
                 required
@@ -206,7 +206,7 @@ export function Plants() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">예민함 여부</label>
+              <label className="block text-sm font-medium mb-1">예민함 여부</label>
               <div className="flex items-center gap-4">
                 <label className="inline-flex items-center gap-2">
                   <input
@@ -231,13 +231,13 @@ export function Plants() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">요구 습도(%)</label>
+              <label className="block text-sm font-medium mb-1">요구 습도(%)</label>
               <div className="flex gap-2">
                 <input
                   type="number"
                   inputMode="numeric"
                   placeholder="최소"
-                  className="w-full px-3 py-2 border rounded"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={humidityMin}
                   onChange={(e) => setHumidityMin(e.target.value)}
                 />
@@ -245,20 +245,20 @@ export function Plants() {
                   type="number"
                   inputMode="numeric"
                   placeholder="최대"
-                  className="w-full px-3 py-2 border rounded"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={humidityMax}
                   onChange={(e) => setHumidityMax(e.target.value)}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">요구 온도(℃)</label>
+              <label className="block text-sm font-medium mb-1">요구 온도(℃)</label>
               <div className="flex gap-2">
                 <input
                   type="number"
                   inputMode="numeric"
                   placeholder="최소"
-                  className="w-full px-3 py-2 border rounded"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={temperatureMin}
                   onChange={(e) => setTemperatureMin(e.target.value)}
                 />
@@ -266,16 +266,16 @@ export function Plants() {
                   type="number"
                   inputMode="numeric"
                   placeholder="최대"
-                  className="w-full px-3 py-2 border rounded"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={temperatureMax}
                   onChange={(e) => setTemperatureMax(e.target.value)}
                 />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">요구 채광량</label>
+              <label className="block text-sm font-medium mb-1">요구 채광량</label>
               <select
-                className="w-full px-3 py-2 border rounded"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={lightLevel}
                 onChange={(e) => setLightLevel(e.target.value as typeof lightLevel)}
               >
@@ -286,27 +286,24 @@ export function Plants() {
               </select>
             </div>
             <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={addPlantMutation.isPending}
-                className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
-              >
+              <Button type="submit" disabled={addPlantMutation.isPending} className="flex-1">
                 {addPlantMutation.isPending ? "추가 중..." : "추가"}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-gray-500 text-white rounded"
+                className="flex-1"
               >
                 취소
-              </button>
+              </Button>
             </div>
           </form>
         </div>
       )}
 
       {plants.length === 0 ? (
-        <div className="text-center text-gray-500 py-8">
+        <div className="text-center text-muted-foreground py-8">
           <p>등록된 식물이 없습니다.</p>
           <p className="text-sm mt-2">위의 "새 식물 추가" 버튼을 눌러 첫 식물을 등록해보세요.</p>
         </div>
@@ -315,27 +312,33 @@ export function Plants() {
           {plants.map((plant) => (
             <div
               key={plant.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+              className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <div className="flex-1">
-                <Link to={`/plants/${plant.id}`} className="text-brand font-medium hover:underline">
+                <Link
+                  to={`/plants/${plant.id}`}
+                  className="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
                   {plant.name}
                 </Link>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   등록일: {new Date(plant.adoptedAt).toLocaleDateString()}
                 </div>
               </div>
-              <button
+              <Button
                 onClick={() => handleDeletePlant(plant.id)}
                 disabled={deletePlantMutation.isPending}
-                className="px-3 py-1 text-sm text-red-600 border border-red-300 rounded hover:bg-red-50 disabled:opacity-50"
+                variant="outline"
+                size="sm"
+                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 삭제
-              </button>
+              </Button>
             </div>
           ))}
         </div>
       )}
+      <MobileNavigation />
     </div>
   );
 }
