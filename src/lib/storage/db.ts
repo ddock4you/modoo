@@ -13,7 +13,7 @@ export interface ModooDB extends DBSchema {
       lightLevel: "low" | "medium" | "high" | null; // 채광량
       isSensitive: boolean; // 예민함 여부
       notes: string; // 메모/특이사항
-      coverPhotoUri: string; // 대표 사진 경로 (OPFS)
+      coverPhotoUri: string; // 대표 사진 경로
       createdAt: number; // 생성일시 (UNIX timestamp)
       updatedAt: number; // 수정일시 (UNIX timestamp)
     };
@@ -63,14 +63,14 @@ export interface ModooDB extends DBSchema {
       byPlantIdAndDoneAt: [string, number];
     };
   };
-  // 식물 사진 메타데이터 및 파일 경로 저장 (실제 파일은 OPFS에 저장)
+  // 식물 사진 메타데이터 및 파일 경로 저장 (실제 파일은 IndexedDB에 저장)
   photos: {
     key: string;
     value: {
       id: string; // 사진 고유 ID
       plantId: string; // 대상 식물 ID (FK)
-      uri: string; // 원본 사진 파일 경로 (OPFS)
-      thumbUri: string; // 썸네일 파일 경로 (OPFS)
+      uri: string; // 원본 사진 파일 경로
+      thumbUri: string; // 썸네일 파일 경로
       width: number; // 원본 사진 너비 (px)
       height: number; // 원본 사진 높이 (px)
       size: number; // 파일 크기 (bytes)

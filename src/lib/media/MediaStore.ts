@@ -2,12 +2,12 @@ import type { PhotoMeta } from "../../domain/types";
 
 /**
  * 미디어 저장소 인터페이스
- * OPFS(Origin Private File System)를 활용한 사진 저장/관리
+ * IndexedDB를 활용한 사진 저장/관리
  */
 export interface MediaStore {
   /**
    * 미디어 스토어 초기화
-   * OPFS 디렉토리 구조 생성 및 권한 설정
+   * IndexedDB 스토어 생성 및 설정
    */
   initialize(): Promise<void>;
 
@@ -59,15 +59,6 @@ export interface MediaStore {
    */
   cleanup?(): Promise<void>;
 }
-
-/**
- * OPFS 경로 상수들
- */
-export const OPFS_PATHS = {
-  ROOT: "/media",
-  ORIGINALS: "/media/originals",
-  THUMBS: "/media/thumbs",
-} as const;
 
 /**
  * 썸네일 설정

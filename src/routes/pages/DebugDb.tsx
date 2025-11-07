@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/useStorage";
-import type { PhotoMeta, SettingKV } from "../../domain/types";
 import { getDB } from "../../lib/storage/db";
 
 type StoreName = "plants" | "taskRules" | "taskEvents" | "photos" | "settings";
@@ -41,7 +39,7 @@ function DevGuard({ children }: { children: React.ReactNode }) {
 }
 
 export function DebugDb() {
-  const storage = useStorage();
+  // const storage = useStorage(); // 현재 사용하지 않음
   const queryClient = useQueryClient();
   const [selectedStore, setSelectedStore] = useState<StoreName>("plants");
   const [offset, setOffset] = useState(0);
@@ -114,7 +112,7 @@ export function DebugDb() {
 
   // 데이터 수정 mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id: _id, data }: { id: string; data: any }) => {
       const db = getDB();
       if (!db) throw new Error("Database not initialized");
 

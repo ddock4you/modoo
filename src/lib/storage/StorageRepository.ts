@@ -1,5 +1,6 @@
 import type { Plant, TaskEvent, TaskRule, PhotoMeta } from "../../domain/types";
-import type { IDBPDatabase, ModooDB } from "./db";
+import type { ModooDB } from "./db";
+import type { IDBPDatabase } from "idb";
 
 export interface StorageRepository {
   // Plants
@@ -28,7 +29,11 @@ export interface StorageRepository {
 }
 
 export class IndexedDbRepository implements StorageRepository {
-  constructor(private db: IDBPDatabase<ModooDB>) {}
+  private db: IDBPDatabase<ModooDB>;
+
+  constructor(db: IDBPDatabase<ModooDB>) {
+    this.db = db;
+  }
 
   // Plants
   async listPlants(params?: { query?: string }): Promise<Plant[]> {

@@ -6,16 +6,13 @@ import type { PhotoMeta } from "../../domain/types";
 import { generateId } from "../../domain/types";
 import { getDB } from "../storage/db";
 
-// Pica 타입 선언 (외부 라이브러리)
-import Pica from "pica";
-
 // 원본 이미지 압축 설정
 const getOriginalCompressionOptions = (onProgress?: (progress: number) => void) =>
   ({
     maxSizeMB: 2, // 최대 2MB
     maxWidthOrHeight: 1920, // 최대 1920px (Full HD)
     useWebWorker: true, // Web Worker 사용으로 성능 향상
-    quality: 0.85, // 85% 품질
+    initialQuality: 0.85, // 85% 품질
     fileType: "image/webp", // WebP 포맷 (더 효율적)
     preserveExif: false, // EXIF 메타데이터 제거로 용량 절감
     onProgress, // 진행률 콜백
@@ -23,13 +20,11 @@ const getOriginalCompressionOptions = (onProgress?: (progress: number) => void) 
 
 /**
  * IndexedDB Blob 기반 미디어 저장소 구현체
- * OPFS 대신 IndexedDB에 Blob을 직접 저장하여 더 넓은 브라우저 호환성 확보
+ * IndexedDB에 Blob을 직접 저장하여 브라우저 호환성 확보
  */
 export class IndexedDBMediaStore implements MediaStore {
-  private pica: any;
-
   constructor() {
-    this.pica = new Pica({ features: ["js", "wasm", "cib"] });
+    // browser-image-compression 사용으로 별도 초기화 불필요
   }
 
   /**
@@ -59,7 +54,7 @@ export class IndexedDBMediaStore implements MediaStore {
   /**
    * 썸네일 생성 (인터페이스 구현용 - 실제로는 내부적으로 처리)
    */
-  async createThumbnail(originalUri: string, photoId: string): Promise<string> {
+  async createThumbnail(_originalUri: string, _photoId: string): Promise<string> {
     // IndexedDB 방식에서는 내부적으로 Blob을 생성하므로
     // 이 메서드는 호환성을 위해 존재
     throw new Error("createThumbnail is not used in IndexedDB storage");
@@ -140,43 +135,16 @@ export class IndexedDBMediaStore implements MediaStore {
    */
   private async createThumbnailBlob(originalFile: File): Promise<Blob> {
     try {
-      const img = new Image();
-      img.src = URL.createObjectURL(originalFile);
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
+      // browser-image-compression으로 썸네일 생성
+      const thumbnailFile = await imageCompression(originalFile, {
+        maxWidthOrHeight: THUMBNAIL_CONFIG.MAX_SIZE, // 최대 512px (종횡비 유지)
+        useWebWorker: true, // Web Worker 사용으로 성능 향상
+        fileType: THUMBNAIL_CONFIG.FORMAT, // JPEG 포맷
+        initialQuality: THUMBNAIL_CONFIG.QUALITY, // 80% 품질
+        preserveExif: false, // EXIF 제거로 용량 절감
       });
 
-      // 캔버스 생성 및 리사이징
-      const canvas = document.createElement("canvas");
-
-      // 최대 크기 계산 (종횡비 유지)
-      const maxSize = THUMBNAIL_CONFIG.MAX_SIZE;
-      const ratio = Math.min(maxSize / img.width, maxSize / img.height);
-      canvas.width = img.width * ratio;
-      canvas.height = img.height * ratio;
-
-      // Pica로 고품질 리사이징
-      const resizedCanvas = await this.pica.resize(img, canvas, {
-        quality: THUMBNAIL_CONFIG.QUALITY,
-        alpha: false,
-        unsharpAmount: 80,
-        unsharpRadius: 0.6,
-        unsharpThreshold: 2,
-      });
-
-      // JPEG로 변환
-      const blob = await this.pica.toBlob(
-        resizedCanvas,
-        THUMBNAIL_CONFIG.FORMAT,
-        THUMBNAIL_CONFIG.QUALITY
-      );
-
-      // 메모리 정리
-      URL.revokeObjectURL(img.src);
-
-      return blob;
+      return thumbnailFile;
     } catch (error) {
       console.error("Failed to create thumbnail:", error);
       throw new Error("썸네일 생성 실패");

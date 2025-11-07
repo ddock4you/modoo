@@ -118,7 +118,7 @@ export function PlantDetail() {
     mutationFn: async (photo: PhotoMeta) => {
       if (!media) throw new Error("Media store not available");
 
-      // OPFS에서 파일 삭제
+      // 미디어 저장소에서 파일 삭제
       await media.remove(photo.uri, photo.thumbUri);
 
       // DB에서 메타데이터 삭제
