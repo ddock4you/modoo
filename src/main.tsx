@@ -10,6 +10,11 @@ import { queryClient } from "./lib/queryClient";
 
 // import { initDB } from "./lib/storage/db";
 
+// 개발 환경에서 수동 테스트 함수들을 전역으로 등록
+if (import.meta.env.DEV) {
+  import("./lib/weather/test-airkorea-manual.ts");
+}
+
 // async function main() {
 //   try {
 //     await initDB();
