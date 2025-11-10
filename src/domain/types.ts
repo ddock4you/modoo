@@ -96,3 +96,58 @@ export const createTimestampFields = () => ({
   createdAt: Date.now(),
   updatedAt: Date.now(),
 });
+
+// Weather 관련 타입들
+export interface WeatherLocation {
+  id: string; // e.g., "37.57,126.98"
+  name: string; // 역지오코딩 or 사용자가 입력
+  lat: number;
+  lon: number;
+  nx: number; // KMA DFS 격자
+  ny: number;
+  tmX: number; // AirKorea TM (EPSG:5181)
+  tmY: number;
+  timezone: "Asia/Seoul";
+  updatedAt?: number;
+}
+
+export interface WeatherNow {
+  tempC: number;
+  humidityPct: number;
+  windMs: number;
+  precipProbPct?: number;
+  weatherCode: { sky?: 1 | 3 | 4; pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7 };
+  updatedAt: number;
+}
+
+export interface WeatherHourlyPoint {
+  time: string; // ISO
+  tempC: number;
+  humidityPct?: number;
+  precipProbPct?: number;
+  sky?: 1 | 3 | 4;
+  pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+}
+
+export interface WeatherDailyPoint {
+  date: string; // yyyy-mm-dd
+  minC: number;
+  maxC: number;
+  precipProbMaxPct?: number;
+  sky?: 1 | 3 | 4;
+  pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+}
+
+export interface AirQuality {
+  pm10: number | null; // µg/m³
+  pm25: number | null; // µg/m³
+  aqiKorea?: string; // "좋음"|"보통"|"나쁨"|"매우나쁨" (통합대기환경지수 등급)
+  stationName?: string;
+  updatedAt: number;
+}
+
+export interface WeatherSummary {
+  comfort: "쾌적" | "주의" | "위험";
+  diffTempVsYesterday?: number;
+  message: string;
+}
