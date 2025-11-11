@@ -18,7 +18,7 @@ describe("AirKoreaProvider", () => {
   });
 
   describe("getNearbyStations", () => {
-    it("should fetch and return nearby stations", async () => {
+    it("근처 측정소를 가져와 반환해야 함", async () => {
       const mockResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
@@ -53,7 +53,7 @@ describe("AirKoreaProvider", () => {
       });
     });
 
-    it("should throw error on API failure", async () => {
+    it("API 실패 시 에러를 발생시켜야 함", async () => {
       const mockResponse = {
         response: {
           header: { resultCode: "99", resultMsg: "API error" },
@@ -70,7 +70,7 @@ describe("AirKoreaProvider", () => {
       );
     });
 
-    it("should throw error when no stations found", async () => {
+    it("측정소가 없을 때 에러를 발생시켜야 함", async () => {
       const mockResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
@@ -89,7 +89,7 @@ describe("AirKoreaProvider", () => {
   });
 
   describe("getAirQuality", () => {
-    it("should fetch and return air quality data", async () => {
+    it("대기질 데이터를 가져와 반환해야 함", async () => {
       const mockResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
@@ -126,7 +126,7 @@ describe("AirKoreaProvider", () => {
       });
     });
 
-    it("should handle null values correctly", async () => {
+    it("null 값을 올바르게 처리해야 함", async () => {
       const mockResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
@@ -158,7 +158,7 @@ describe("AirKoreaProvider", () => {
   });
 
   describe("getAirQualityByLocation", () => {
-    it("should get air quality by coordinates", async () => {
+    it("좌표로 대기질을 가져와야 함", async () => {
       // Mock coord import
       vi.doMock("./coord", () => ({
         latLonToTM: vi.fn(() => ({ tmX: 200000, tmY: 500000 })),
@@ -187,7 +187,7 @@ describe("AirKoreaProvider", () => {
       expect(result).toEqual(mockAirQuality);
     });
 
-    it("should fallback to default station on failure", async () => {
+    it("실패 시 기본 측정소로 폴백해야 함", async () => {
       vi.spyOn(provider, "getNearbyStations").mockRejectedValue(new Error("API error"));
       vi.spyOn(provider, "getAirQuality").mockResolvedValue({
         pm10: 20,
@@ -205,7 +205,7 @@ describe("AirKoreaProvider", () => {
   });
 
   describe("CAI grade mapping", () => {
-    it("should map CAI grades correctly", async () => {
+    it("CAI 등급을 올바르게 매핑해야 함", async () => {
       const testCases = [
         { input: "1", expected: "좋음" },
         { input: "2", expected: "보통" },
