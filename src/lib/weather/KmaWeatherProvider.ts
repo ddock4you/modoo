@@ -287,7 +287,9 @@ export class KmaWeatherProvider {
 
       // 현재 시간 기준 미래 데이터만 포함
       const now = new Date();
-      const forecastTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute);
+      const forecastTime = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour, minute)
+      );
 
       if (forecastTime > now) {
         const point: WeatherHourlyPoint = {

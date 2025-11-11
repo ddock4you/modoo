@@ -132,6 +132,9 @@ describe("KmaWeatherProvider", () => {
 
   describe("getHourlyForecast", () => {
     it("시간별 예보 데이터를 가져와 파싱해야 함", async () => {
+      // 테스트 시간을 고정하여 미래 데이터 필터링 문제를 방지
+      const testTime = new Date("2024-01-01T14:00:00Z"); // 오후 2시로 설정
+      vi.setSystemTime(testTime);
       const mockResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
@@ -176,6 +179,9 @@ describe("KmaWeatherProvider", () => {
       expect(result[0].time).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
 
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining("getUltraSrtFcst"));
+
+      // 테스트 시간 복원
+      vi.useRealTimers();
     });
 
     it("과거 예보를 필터링해야 함", async () => {
