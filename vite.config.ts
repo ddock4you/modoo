@@ -10,6 +10,22 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      // VWorld API 프록시 설정
+      "/api/vworld": {
+        target: "https://api.vworld.kr",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/vworld/, ""),
+        configure: (proxy, options) => {
+          // CORS 헤더 추가
+          proxy.on("proxyReq", (proxyReq, req, res) => {
+            proxyReq.setHeader("Access-Control-Allow-Origin", "*");
+          });
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",

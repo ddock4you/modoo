@@ -138,6 +138,21 @@ export interface ModooDB extends DBSchema {
       updatedAt: number; // 수정일시
     };
   };
+  // VWorld 역지오코딩 캐시 저장 (30일 TTL)
+  weather_geocoding_cache: {
+    key: string; // 캐시 키: "lat,lng" 형식
+    value: {
+      key: string; // 캐시 키 (중복)
+      lat: number; // 위도
+      lon: number; // 경도
+      address: string; // 변환된 주소
+      createdAt: number; // 캐시 생성 일시
+      expiresAt: number; // 캐시 만료 일시 (30일 후)
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스 (만료된 캐시 정리용)
+    };
+  };
 }
 
 let dbInstance: IDBPDatabase<ModooDB> | null = null;
@@ -145,8 +160,8 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 2로 설정 (Blob 기반 사진 저장 추가)
-  dbInstance = await openDB<ModooDB>("modoo", 2, {
+  // 버전 3로 설정 (VWorld 역지오코딩 캐시 추가)
+  dbInstance = await openDB<ModooDB>("modoo", 3, {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     upgrade(db, oldVersion, newVersion, _transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
@@ -196,6 +211,19 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         photosBlobsStore.createIndex("byCreatedAt", "createdAt");
 
         console.log("Successfully upgraded to database version 2");
+      }
+
+      // 버전 3: VWorld 역지오코딩 캐시 추가
+      if (oldVersion < 3) {
+        console.log("Upgrading to version 3: Adding weather_geocoding_cache store");
+
+        // Weather Geocoding Cache store
+        const geocodingCacheStore = db.createObjectStore("weather_geocoding_cache", {
+          keyPath: "key",
+        });
+        geocodingCacheStore.createIndex("byExpiresAt", "expiresAt");
+
+        console.log("Successfully upgraded to database version 3");
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
