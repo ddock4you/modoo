@@ -153,6 +153,108 @@ export interface ModooDB extends DBSchema {
       byExpiresAt: number; // 만료시간으로 인덱스 (만료된 캐시 정리용)
     };
   };
+  // 날씨 현재 데이터 캐시 (10분 TTL)
+  weather_now: {
+    key: [string, number]; // [locationId, baseTime]
+    value: {
+      locationId: string;
+      baseTime: number; // 발표시간
+      data: {
+        tempC: number;
+        humidityPct: number;
+        windMs: number;
+        precipProbPct?: number;
+        weatherCode: { sky?: 1 | 3 | 4; pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7 };
+        updatedAt: number;
+      };
+      expiresAt: number; // 캐시 만료 시간
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스
+      byLocationId: string; // 위치별 조회용
+    };
+  };
+  // 날씨 시간별 데이터 캐시 (60분 TTL)
+  weather_hourly: {
+    key: [string, number]; // [locationId, baseTime]
+    value: {
+      locationId: string;
+      baseTime: number; // 발표시간
+      data: Array<{
+        time: string; // ISO
+        tempC: number;
+        humidityPct?: number;
+        precipProbPct?: number;
+        sky?: 1 | 3 | 4;
+        pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+      }>;
+      expiresAt: number; // 캐시 만료 시간
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스
+      byLocationId: string; // 위치별 조회용
+    };
+  };
+  // 날씨 일별 데이터 캐시 (6시간 TTL)
+  weather_daily: {
+    key: [string, number]; // [locationId, baseTime]
+    value: {
+      locationId: string;
+      baseTime: number; // 발표시간
+      data: Array<{
+        date: string; // yyyy-mm-dd
+        minC: number;
+        maxC: number;
+        precipProbMaxPct?: number;
+        sky?: 1 | 3 | 4;
+        pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+      }>;
+      expiresAt: number; // 캐시 만료 시간
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스
+      byLocationId: string; // 위치별 조회용
+    };
+  };
+  // 대기질 데이터 캐시 (60분 TTL)
+  air_quality: {
+    key: [string, number]; // [locationId, baseTime]
+    value: {
+      locationId: string;
+      baseTime: number; // 발표시간
+      data: {
+        pm10: number | null;
+        pm25: number | null;
+        aqiKorea?: string;
+        stationName?: string;
+        updatedAt: number;
+      };
+      expiresAt: number; // 캐시 만료 시간
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스
+      byLocationId: string; // 위치별 조회용
+    };
+  };
+  // 날씨 위치 정보 캐시 (영구 저장)
+  weather_locations: {
+    key: string; // locationId
+    value: {
+      id: string;
+      name: string;
+      lat: number;
+      lon: number;
+      nx: number;
+      ny: number;
+      tmX: number;
+      tmY: number;
+      timezone: "Asia/Seoul";
+      updatedAt: number;
+    };
+    indexes: {
+      byUpdatedAt: number; // 업데이트 시간으로 인덱스
+    };
+  };
 }
 
 let dbInstance: IDBPDatabase<ModooDB> | null = null;
@@ -160,8 +262,8 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 3로 설정 (VWorld 역지오코딩 캐시 추가)
-  dbInstance = await openDB<ModooDB>("modoo", 3, {
+  // 버전 4로 설정 (날씨 캐시 스토어 추가)
+  dbInstance = await openDB<ModooDB>("modoo", 4, {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     upgrade(db, oldVersion, newVersion, _transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
@@ -224,6 +326,47 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         geocodingCacheStore.createIndex("byExpiresAt", "expiresAt");
 
         console.log("Successfully upgraded to database version 3");
+      }
+
+      // 버전 4: 날씨 캐시 스토어 추가
+      if (oldVersion < 4) {
+        console.log("Upgrading to version 4: Adding weather cache stores");
+
+        // Weather Now store
+        const weatherNowStore = db.createObjectStore("weather_now", {
+          keyPath: ["locationId", "baseTime"],
+        });
+        weatherNowStore.createIndex("byExpiresAt", "expiresAt");
+        weatherNowStore.createIndex("byLocationId", "locationId");
+
+        // Weather Hourly store
+        const weatherHourlyStore = db.createObjectStore("weather_hourly", {
+          keyPath: ["locationId", "baseTime"],
+        });
+        weatherHourlyStore.createIndex("byExpiresAt", "expiresAt");
+        weatherHourlyStore.createIndex("byLocationId", "locationId");
+
+        // Weather Daily store
+        const weatherDailyStore = db.createObjectStore("weather_daily", {
+          keyPath: ["locationId", "baseTime"],
+        });
+        weatherDailyStore.createIndex("byExpiresAt", "expiresAt");
+        weatherDailyStore.createIndex("byLocationId", "locationId");
+
+        // Air Quality store
+        const airQualityStore = db.createObjectStore("air_quality", {
+          keyPath: ["locationId", "baseTime"],
+        });
+        airQualityStore.createIndex("byExpiresAt", "expiresAt");
+        airQualityStore.createIndex("byLocationId", "locationId");
+
+        // Weather Locations store
+        const weatherLocationsStore = db.createObjectStore("weather_locations", {
+          keyPath: "id",
+        });
+        weatherLocationsStore.createIndex("byUpdatedAt", "updatedAt");
+
+        console.log("Successfully upgraded to database version 4");
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

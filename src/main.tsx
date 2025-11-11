@@ -14,6 +14,7 @@ import { queryClient } from "./lib/queryClient";
 if (import.meta.env.DEV) {
   import("./lib/weather/test-airkorea-manual.ts");
   import("./lib/weather/test-vworld-manual.ts");
+  import("./lib/weather/test-cache-integration.ts");
 }
 
 // async function main() {

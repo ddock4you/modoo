@@ -151,3 +151,39 @@ export interface WeatherSummary {
   diffTempVsYesterday?: number;
   message: string;
 }
+
+// Weather Cache Entry Types (IndexedDB 스토어용)
+export interface WeatherNowCacheEntry {
+  locationId: string;
+  baseTime: number; // 발표시간
+  data: WeatherNow;
+  expiresAt: number; // 캐시 만료 시간
+}
+
+export interface WeatherHourlyCacheEntry {
+  locationId: string;
+  baseTime: number; // 발표시간
+  data: WeatherHourlyPoint[];
+  expiresAt: number; // 캐시 만료 시간
+}
+
+export interface WeatherDailyCacheEntry {
+  locationId: string;
+  baseTime: number; // 발표시간
+  data: WeatherDailyPoint[];
+  expiresAt: number; // 캐시 만료 시간
+}
+
+export interface AirQualityCacheEntry {
+  locationId: string;
+  baseTime: number; // 발표시간
+  data: AirQuality;
+  expiresAt: number; // 캐시 만료 시간
+}
+
+export interface WeatherCacheEntry {
+  locationId: string;
+  baseTime: number;
+  data: WeatherNow | WeatherHourlyPoint[] | WeatherDailyPoint[] | AirQuality;
+  expiresAt: number;
+}
