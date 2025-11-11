@@ -6,7 +6,6 @@
  * 우선순위: 도로명 주소 → 지번 주소 → 법정동 정보
  */
 
-import type { WeatherLocation } from "../../domain/types";
 import { initDB } from "../../lib/storage/db";
 
 // VWorld API 응답 타입 정의
