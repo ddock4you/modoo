@@ -136,13 +136,13 @@ export function useWeatherSummary() {
     location: currentLocation,
 
     // 현재 날씨 요약
-    temperature: now?.temperature,
-    condition: now?.condition,
-    humidity: now?.humidity,
-    windSpeed: now?.windSpeed,
+    temperature: now?.tempC,
+    condition: now?.weatherCode, // 날씨 코드 객체
+    humidity: now?.humidityPct,
+    windSpeed: now?.windMs,
 
     // 대기질 요약
-    airQualityGrade: airQuality?.grade,
+    airQualityGrade: airQuality?.aqiKorea,
     pm10: airQuality?.pm10,
     pm25: airQuality?.pm25,
 

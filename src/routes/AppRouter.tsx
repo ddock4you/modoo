@@ -5,6 +5,7 @@ import { Plants } from "./pages/Plants";
 import { PlantDetail } from "./pages/PlantDetail";
 import { Settings } from "./pages/Settings";
 import { DebugDb } from "./pages/DebugDb";
+import { WeatherProvider } from "../lib/weather/WeatherProvider";
 
 const router = createBrowserRouter([
   {
@@ -46,5 +47,9 @@ const router = createBrowserRouter([
 ]);
 
 export function AppRouter() {
-  return <RouterProvider router={router} />;
+  return (
+    <WeatherProvider>
+      <RouterProvider router={router} />
+    </WeatherProvider>
+  );
 }

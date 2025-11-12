@@ -5,10 +5,6 @@ import type {
   WeatherHourlyPoint,
   WeatherDailyPoint,
   AirQuality,
-  WeatherNowCacheEntry,
-  WeatherHourlyCacheEntry,
-  WeatherDailyCacheEntry,
-  AirQualityCacheEntry,
   WeatherCacheEntry,
 } from "../../domain/types";
 
@@ -199,7 +195,9 @@ export class IndexedDbWeatherCache {
         await tx.done;
 
         if (deletedCount > 0) {
-          console.log(`Cleaned up ${deletedCount} expired entries from ${storeName}`);
+          if (import.meta.env.DEV) {
+            console.log(`Cleaned up ${deletedCount} expired entries from ${storeName}`);
+          }
         }
       }
     } catch (error) {

@@ -58,8 +58,6 @@ export class VWorldGeocodingProvider {
       // API 호출
       const response = await this.callVWorldApi(lat, lon);
       const address = this.parseAddressResponse(response);
-      console.log(response);
-      console.log(address);
       // 캐시에 저장 (30일 TTL)
       await this.setCachedResult(lat, lon, address);
 
@@ -225,7 +223,9 @@ export class VWorldGeocodingProvider {
         const tx = db.transaction("weather_geocoding_cache", "readwrite");
         await Promise.all(expiredKeys.map((key) => tx.store.delete(key)));
         await tx.done;
-        console.log(`Cleaned up ${expiredKeys.length} expired geocoding cache entries`);
+        if (import.meta.env.DEV) {
+          console.log(`Cleaned up ${expiredKeys.length} expired geocoding cache entries`);
+        }
       }
     } catch (error) {
       console.warn("Failed to cleanup expired geocoding cache:", error);

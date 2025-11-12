@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
 import { MobileNavigation } from "../../components/mobile-navigation";
+import { WeatherWidget } from "../../components/weather/WeatherWidget";
 import type { TaskRule, Plant } from "../../domain/types";
 
 interface DueTask {
@@ -172,6 +173,11 @@ export function Dashboard() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Weather Widget */}
+      <div className="mt-6">
+        <WeatherWidget />
       </div>
 
       {/* Quick Actions */}

@@ -37,6 +37,7 @@ export interface WeatherRepositoryConfig {
  * 날씨 데이터 저장소 인터페이스
  */
 export interface IWeatherRepository {
+  init(): Promise<void>;
   /**
    * 현재 날씨 데이터 조회 (캐시 우선, 없으면 API 호출)
    */
@@ -170,13 +171,32 @@ export class WeatherRepository implements IWeatherRepository {
       }
 
       // 캐시 미스 또는 stale - API 호출
-      const location = await weatherCache.getLocation(locationId);
+      let location = await weatherCache.getLocation(locationId);
       if (!location) {
-        console.warn(`Location not found for locationId: ${locationId}`);
-        return cached?.data || null;
+        // 기본 위치인 경우 기본 위치 정보 생성
+        if (locationId === "default") {
+          location = {
+            id: "default",
+            lat: 37.5139,
+            lon: 127.1025,
+            name: "서울 송파구 잠실동",
+            nx: 62,
+            ny: 124,
+            tmX: 961114,
+            tmY: 1946434,
+            timezone: "Asia/Seoul",
+            updatedAt: Date.now(),
+          };
+          // 캐시에 기본 위치 저장
+          await weatherCache.setLocation(location);
+        } else {
+          console.warn(`Location not found for locationId: ${locationId}`);
+          return cached?.data || null;
+        }
       }
 
       const now = await this.kmaProvider.getCurrentWeather(location);
+
       if (now) {
         const baseTime = this.normalizeBaseTime(Date.now(), "now");
         await weatherCache.setNow(locationId, baseTime, now);
@@ -210,10 +230,28 @@ export class WeatherRepository implements IWeatherRepository {
         return cached.data;
       }
 
-      const location = await weatherCache.getLocation(locationId);
+      let location = await weatherCache.getLocation(locationId);
       if (!location) {
-        console.warn(`Location not found for locationId: ${locationId}`);
-        return cached?.data || null;
+        // 기본 위치인 경우 기본 위치 정보 생성
+        if (locationId === "default") {
+          location = {
+            id: "default",
+            lat: 37.5139,
+            lon: 127.1025,
+            name: "서울 송파구 잠실동",
+            nx: 62,
+            ny: 124,
+            tmX: 961114,
+            tmY: 1946434,
+            timezone: "Asia/Seoul",
+            updatedAt: Date.now(),
+          };
+          // 캐시에 기본 위치 저장
+          await weatherCache.setLocation(location);
+        } else {
+          console.warn(`Location not found for locationId: ${locationId}`);
+          return cached?.data || null;
+        }
       }
 
       const hourly = await this.kmaProvider.getHourlyForecast(location);
@@ -288,10 +326,28 @@ export class WeatherRepository implements IWeatherRepository {
         return cached.data;
       }
 
-      const location = await weatherCache.getLocation(locationId);
+      let location = await weatherCache.getLocation(locationId);
       if (!location) {
-        console.warn(`Location not found for locationId: ${locationId}`);
-        return cached?.data || null;
+        // 기본 위치인 경우 기본 위치 정보 생성
+        if (locationId === "default") {
+          location = {
+            id: "default",
+            lat: 37.5139,
+            lon: 127.1025,
+            name: "서울 송파구 잠실동",
+            nx: 62,
+            ny: 124,
+            tmX: 961114,
+            tmY: 1946434,
+            timezone: "Asia/Seoul",
+            updatedAt: Date.now(),
+          };
+          // 캐시에 기본 위치 저장
+          await weatherCache.setLocation(location);
+        } else {
+          console.warn(`Location not found for locationId: ${locationId}`);
+          return cached?.data || null;
+        }
       }
 
       const airQuality = await this.airKoreaProvider.getAirQualityByLocation(
@@ -436,14 +492,11 @@ function getWeatherConfig(): WeatherRepositoryConfig {
   const airKoreaApiKey = import.meta.env.VITE_AIRKOREA_SERVICE_KEY;
   const vworldApiKey = import.meta.env.VITE_VWORLD_API_KEY;
 
-  if (!kmaApiKey || !airKoreaApiKey || !vworldApiKey) {
-    throw new Error("Missing required weather API keys in environment variables");
-  }
-
+  // API 키가 없어도 일단 빈 문자열로 진행 (캐시된 데이터나 기본값 사용)
   return {
-    kmaApiKey,
-    airKoreaApiKey,
-    vworldApiKey,
+    kmaApiKey: kmaApiKey || "",
+    airKoreaApiKey: airKoreaApiKey || "",
+    vworldApiKey: vworldApiKey || "",
   };
 }
 
