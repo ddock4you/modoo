@@ -138,6 +138,7 @@ export class KmaWeatherProvider {
 
     const ultraResponse = await fetch(ultraUrl);
     const ultraData: KmaApiResponse<UltraSrtFcstItem> = await ultraResponse.json();
+    console.log({ ultraData });
 
     if (ultraData.response?.header?.resultCode !== "00") {
       throw new Error(`KMA UltraSrtFcst API Error: ${ultraData.response?.header?.resultMsg}`);
@@ -171,7 +172,7 @@ export class KmaWeatherProvider {
 
     const response = await fetch(url);
     const data: KmaApiResponse<VilageFcstItem> = await response.json();
-
+    console.log({ 주간예보: data });
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`KMA VilageFcst API Error: ${data.response?.header?.resultMsg}`);
     }
