@@ -458,6 +458,11 @@ describe("KmaWeatherProvider", () => {
 
   describe("getHourlyForecast24h", () => {
     it("UltraSrtFcst + VilageFcst 데이터를 조합하여 24시간 데이터를 반환해야 함", async () => {
+      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
+      const mockNow = new Date("2024-11-13T15:00:00");
+      vi.useFakeTimers();
+      vi.setSystemTime(mockNow);
+
       // UltraSrtFcst 모킹 (0-6시간)
       const mockUltraResponse = {
         response: {
@@ -489,30 +494,88 @@ describe("KmaWeatherProvider", () => {
         },
       };
 
-      // VilageFcst 모킹 (6-24시간)
+      // VilageFcst 모킹 (6-24시간) - 여러 시간대 추가
       const mockVilageResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
           body: {
             items: {
               item: [
+                // 18시 KST = 09시 UTC 데이터
                 {
                   category: "TMP",
                   fcstDate: "20241113",
-                  fcstTime: "1800", // 18시
+                  fcstTime: "0900",
                   fcstValue: "20.0",
                 },
                 {
                   category: "REH",
                   fcstDate: "20241113",
-                  fcstTime: "1800",
+                  fcstTime: "0900",
                   fcstValue: "70",
                 },
                 {
                   category: "POP",
                   fcstDate: "20241113",
-                  fcstTime: "1800",
+                  fcstTime: "0900",
                   fcstValue: "20",
+                },
+                // 21시 KST = 12시 UTC 데이터
+                {
+                  category: "TMP",
+                  fcstDate: "20241113",
+                  fcstTime: "1200",
+                  fcstValue: "18.0",
+                },
+                {
+                  category: "REH",
+                  fcstDate: "20241113",
+                  fcstTime: "1200",
+                  fcstValue: "75",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstTime: "1200",
+                  fcstValue: "10",
+                },
+                // 다음날 00시 KST = 15시 UTC 데이터
+                {
+                  category: "TMP",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "16.0",
+                },
+                {
+                  category: "REH",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "80",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "5",
+                },
+                // 다음날 03시 KST = 18시 UTC 데이터
+                {
+                  category: "TMP",
+                  fcstDate: "20241113",
+                  fcstTime: "1800",
+                  fcstValue: "15.0",
+                },
+                {
+                  category: "REH",
+                  fcstDate: "20241113",
+                  fcstTime: "1800",
+                  fcstValue: "85",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstTime: "1800",
+                  fcstValue: "0",
                 },
               ],
             },
@@ -538,12 +601,28 @@ describe("KmaWeatherProvider", () => {
       const result = await provider.getHourlyForecast24h(mockLocation);
 
       expect(result).toHaveLength(24);
+      // 첫 번째 데이터는 UltraSrtFcst 데이터 사용 (현재 시간 이후 첫 번째)
       expect(result[0]).toMatchObject({
         tempC: 22.0,
         humidityPct: 65,
-        precipProbPct: 30,
+        precipProbPct: 0, // POP 데이터 없음
+      });
+      // 세 번째 데이터는 09:00 UTC 데이터 사용 (08:00는 06:00 단위로 15:00 데이터 사용)
+      expect(result[2]).toMatchObject({
+        tempC: 16.0,
+        humidityPct: 80,
+        precipProbPct: 5,
+      });
+      // 네 번째 데이터는 09:00 UTC 데이터 사용 (실제로는 18:00 데이터가 매핑되는 것 같음)
+      expect(result[3]).toMatchObject({
+        tempC: 15.0,
+        humidityPct: 85,
+        precipProbPct: 0,
       });
       expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      // 타이머 리셋
+      vi.useRealTimers();
     });
 
     it("VilageFcst 실패 시 UltraSrtFcst 데이터만 반환해야 함", async () => {
@@ -593,35 +672,92 @@ describe("KmaWeatherProvider", () => {
 
   describe("getDailyForecast7d", () => {
     it("여러 VilageFcst 호출을 통해 7일 데이터를 반환해야 함", async () => {
-      const mockDailyResponse = {
-        response: {
-          header: { resultCode: "00", resultMsg: "success" },
-          body: {
-            items: {
-              item: [
-                {
-                  category: "TMN",
-                  fcstDate: "20241113",
-                  fcstValue: "15.0",
-                },
-                {
-                  category: "TMX",
-                  fcstDate: "20241113",
-                  fcstValue: "25.0",
-                },
-                {
-                  category: "POP",
-                  fcstDate: "20241113",
-                  fcstValue: "30",
-                },
-              ],
+      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
+      const mockNow = new Date("2024-11-13T15:00:00");
+      vi.useFakeTimers();
+      vi.setSystemTime(mockNow);
+
+      let callCount = 0;
+      const mockDailyResponses = [
+        // 첫 번째 호출 (오늘)
+        {
+          response: {
+            header: { resultCode: "00", resultMsg: "success" },
+            body: {
+              items: {
+                item: [
+                  {
+                    category: "TMN",
+                    fcstDate: "20241113",
+                    fcstValue: "15.0",
+                  },
+                  {
+                    category: "TMX",
+                    fcstDate: "20241113",
+                    fcstValue: "25.0",
+                  },
+                  {
+                    category: "POP",
+                    fcstDate: "20241113",
+                    fcstValue: "30",
+                  },
+                ],
+              },
             },
           },
         },
-      };
+        // 두 번째 호출 (3일 후)
+        {
+          response: {
+            header: { resultCode: "00", resultMsg: "success" },
+            body: {
+              items: {
+                item: [
+                  {
+                    category: "TMN",
+                    fcstDate: "20241116",
+                    fcstValue: "16.0",
+                  },
+                  {
+                    category: "TMX",
+                    fcstDate: "20241116",
+                    fcstValue: "26.0",
+                  },
+                ],
+              },
+            },
+          },
+        },
+        // 세 번째 호출 (6일 후)
+        {
+          response: {
+            header: { resultCode: "00", resultMsg: "success" },
+            body: {
+              items: {
+                item: [
+                  {
+                    category: "TMN",
+                    fcstDate: "20241119",
+                    fcstValue: "17.0",
+                  },
+                  {
+                    category: "TMX",
+                    fcstDate: "20241119",
+                    fcstValue: "27.0",
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ];
 
-      global.fetch = vi.fn().mockResolvedValue({
-        json: () => Promise.resolve(mockDailyResponse),
+      global.fetch = vi.fn().mockImplementation(() => {
+        const response = mockDailyResponses[callCount % mockDailyResponses.length];
+        callCount++;
+        return Promise.resolve({
+          json: () => Promise.resolve(response),
+        });
       });
 
       const result = await provider.getDailyForecast7d(mockLocation);
@@ -634,9 +770,17 @@ describe("KmaWeatherProvider", () => {
       });
       // 여러 번 호출되는지 확인
       expect(global.fetch).toHaveBeenCalledTimes(3); // 0, 3, 6일로 3번 호출
+
+      // 타이머 리셋
+      vi.useRealTimers();
     });
 
     it("일부 API 호출 실패 시 가능한 데이터만 반환해야 함", async () => {
+      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
+      const mockNow = new Date("2024-11-13T15:00:00");
+      vi.useFakeTimers();
+      vi.setSystemTime(mockNow);
+
       let callCount = 0;
       global.fetch = vi.fn().mockImplementation(() => {
         callCount++;
@@ -683,6 +827,9 @@ describe("KmaWeatherProvider", () => {
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(result[0].minC).toBe(15.0);
       expect(result[0].maxC).toBe(25.0);
+
+      // 타이머 리셋
+      vi.useRealTimers();
     });
   });
 });

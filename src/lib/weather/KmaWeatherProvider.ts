@@ -493,7 +493,7 @@ export class KmaWeatherProvider {
       const forecastTime = new Date(now);
       forecastTime.setHours(forecastTime.getHours() + hour);
 
-      if (forecastTime <= now) continue; // 과거 데이터 제외
+      if (forecastTime < now) continue; // 과거 데이터 제외
 
       let tempC: number | undefined;
       let humidityPct: number | undefined;

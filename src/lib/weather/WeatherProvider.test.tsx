@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WeatherProvider, useWeatherContext } from "./WeatherProvider";
 import type {
@@ -153,11 +153,13 @@ describe("WeatherProvider", () => {
       expect(screen.getByTestId("online")).toHaveTextContent("online");
     });
 
-    it("오프라인 이벤트 발생 시 오프라인 상태로 변경되어야 함", () => {
+    it("오프라인 이벤트 발생 시 오프라인 상태로 변경되어야 함", async () => {
       renderWithProviders(<TestComponent />);
 
       // 오프라인 이벤트 발생
-      window.dispatchEvent(new Event("offline"));
+      await act(async () => {
+        window.dispatchEvent(new Event("offline"));
+      });
 
       expect(screen.getByTestId("online")).toHaveTextContent("offline");
     });
