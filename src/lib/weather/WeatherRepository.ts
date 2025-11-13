@@ -254,7 +254,7 @@ export class WeatherRepository implements IWeatherRepository {
         }
       }
 
-      const hourly = await this.kmaProvider.getHourlyForecast(location);
+      const hourly = await this.kmaProvider.getHourlyForecast24h(location);
       if (hourly) {
         const baseTime = this.normalizeBaseTime(Date.now(), "hourly");
         await weatherCache.setHourly(locationId, baseTime, hourly);
@@ -293,7 +293,7 @@ export class WeatherRepository implements IWeatherRepository {
         return cached?.data || null;
       }
 
-      const daily = await this.kmaProvider.getDailyForecast(location);
+      const daily = await this.kmaProvider.getDailyForecast7d(location);
       if (daily) {
         const baseTime = this.normalizeBaseTime(Date.now(), "daily");
         await weatherCache.setDaily(locationId, baseTime, daily);

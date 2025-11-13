@@ -455,4 +455,234 @@ describe("KmaWeatherProvider", () => {
       expect(typeof result.weatherCode.pty).toBe("number");
     });
   });
+
+  describe("getHourlyForecast24h", () => {
+    it("UltraSrtFcst + VilageFcst 데이터를 조합하여 24시간 데이터를 반환해야 함", async () => {
+      // UltraSrtFcst 모킹 (0-6시간)
+      const mockUltraResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: [
+                {
+                  category: "T1H",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "22.0",
+                },
+                {
+                  category: "REH",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "65",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "30",
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      // VilageFcst 모킹 (6-24시간)
+      const mockVilageResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: [
+                {
+                  category: "TMP",
+                  fcstDate: "20241113",
+                  fcstTime: "1800", // 18시
+                  fcstValue: "20.0",
+                },
+                {
+                  category: "REH",
+                  fcstDate: "20241113",
+                  fcstTime: "1800",
+                  fcstValue: "70",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstTime: "1800",
+                  fcstValue: "20",
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      // fetch 모킹: 첫 번째 호출은 UltraSrtFcst, 두 번째 호출은 VilageFcst
+      let callCount = 0;
+      global.fetch = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockUltraResponse),
+          });
+        } else {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockVilageResponse),
+          });
+        }
+      });
+
+      const result = await provider.getHourlyForecast24h(mockLocation);
+
+      expect(result).toHaveLength(24);
+      expect(result[0]).toMatchObject({
+        tempC: 22.0,
+        humidityPct: 65,
+        precipProbPct: 30,
+      });
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("VilageFcst 실패 시 UltraSrtFcst 데이터만 반환해야 함", async () => {
+      const mockUltraResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: [
+                {
+                  category: "T1H",
+                  fcstDate: "20241113",
+                  fcstTime: "1500",
+                  fcstValue: "22.0",
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      // 첫 번째 호출 성공, 두 번째 호출 실패
+      let callCount = 0;
+      global.fetch = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockUltraResponse),
+          });
+        } else {
+          return Promise.resolve({
+            json: () => Promise.resolve({
+              response: {
+                header: { resultCode: "99", resultMsg: "error" },
+              },
+            }),
+          });
+        }
+      });
+
+      const result = await provider.getHourlyForecast24h(mockLocation);
+
+      expect(result.length).toBeGreaterThan(0);
+      expect(result.length).toBeLessThanOrEqual(6); // UltraSrtFcst만으로 최대 6시간
+    });
+  });
+
+  describe("getDailyForecast7d", () => {
+    it("여러 VilageFcst 호출을 통해 7일 데이터를 반환해야 함", async () => {
+      const mockDailyResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: [
+                {
+                  category: "TMN",
+                  fcstDate: "20241113",
+                  fcstValue: "15.0",
+                },
+                {
+                  category: "TMX",
+                  fcstDate: "20241113",
+                  fcstValue: "25.0",
+                },
+                {
+                  category: "POP",
+                  fcstDate: "20241113",
+                  fcstValue: "30",
+                },
+              ],
+            },
+          },
+        },
+      };
+
+      global.fetch = vi.fn().mockResolvedValue({
+        json: () => Promise.resolve(mockDailyResponse),
+      });
+
+      const result = await provider.getDailyForecast7d(mockLocation);
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0]).toMatchObject({
+        minC: 15.0,
+        maxC: 25.0,
+        precipProbMaxPct: 30,
+      });
+      // 여러 번 호출되는지 확인
+      expect(global.fetch).toHaveBeenCalledTimes(3); // 0, 3, 6일로 3번 호출
+    });
+
+    it("일부 API 호출 실패 시 가능한 데이터만 반환해야 함", async () => {
+      let callCount = 0;
+      global.fetch = vi.fn().mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                response: {
+                  header: { resultCode: "00", resultMsg: "success" },
+                  body: {
+                    items: {
+                      item: [
+                        {
+                          category: "TMN",
+                          fcstDate: "20241113",
+                          fcstValue: "15.0",
+                        },
+                        {
+                          category: "TMX",
+                          fcstDate: "20241113",
+                          fcstValue: "25.0",
+                        },
+                      ],
+                    },
+                  },
+                },
+              }),
+          });
+        } else {
+          // 나머지 호출들은 실패
+          return Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                response: {
+                  header: { resultCode: "99", resultMsg: "error" },
+                },
+              }),
+          });
+        }
+      });
+
+      const result = await provider.getDailyForecast7d(mockLocation);
+
+      expect(result.length).toBeGreaterThanOrEqual(1);
+      expect(result[0].minC).toBe(15.0);
+      expect(result[0].maxC).toBe(25.0);
+    });
+  });
 });

@@ -152,6 +152,12 @@ export interface WeatherSummary {
   message: string;
 }
 
+// 차트 컴포넌트용 데이터 구조
+export interface WeatherChartData {
+  hourly24h: WeatherHourlyPoint[]; // 대시보드/상세페이지 공용 24시간 hourly 데이터
+  daily7d: WeatherDailyPoint[]; // 상세페이지 전용 7일 daily 데이터
+}
+
 // Weather Cache Entry Types (IndexedDB 스토어용)
 export interface WeatherNowCacheEntry {
   locationId: string;

@@ -16,6 +16,7 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 // Weather 훅들 모킹
 const mockUseWeatherSummary = vi.fn();
 const mockUseCurrentWeather = vi.fn();
+const mockUseDailyWeather = vi.fn();
 const mockUseWeatherIcon = vi.fn();
 const mockUseWeatherFormat = vi.fn();
 const mockUseHourlyWeather = vi.fn();
@@ -23,12 +24,20 @@ const mockUseHourlyWeather = vi.fn();
 vi.mock("../../lib/weather/useWeather", () => ({
   useWeatherSummary: () => mockUseWeatherSummary(),
   useCurrentWeather: () => mockUseCurrentWeather(),
+  useDailyWeather: () => mockUseDailyWeather(),
   useWeatherIcon: () => mockUseWeatherIcon(),
   useWeatherFormat: () => mockUseWeatherFormat(),
   useHourlyWeather: () => mockUseHourlyWeather(),
 }));
 
-// recharts는 더 이상 사용하지 않음
+// recharts와 차트 컴포넌트 모킹
+vi.mock("./HourlyChart", () => ({
+  HourlyChart: () => <div data-testid="hourly-chart">HourlyChart Mock</div>,
+}));
+
+vi.mock("./HumidityChart", () => ({
+  HumidityChart: () => <div data-testid="humidity-chart">HumidityChart Mock</div>,
+}));
 
 describe("WeatherWidget", () => {
   beforeEach(() => {
@@ -36,6 +45,14 @@ describe("WeatherWidget", () => {
 
     // 기본 모킹 값들
     mockUseCurrentWeather.mockReturnValue({
+      data: null,
+      isLoading: false,
+      error: null,
+      isStale: false,
+      lastUpdated: Date.now(),
+    });
+
+    mockUseDailyWeather.mockReturnValue({
       data: null,
       isLoading: false,
       error: null,
@@ -133,11 +150,27 @@ describe("WeatherWidget", () => {
       now: { pty: 0, sky: 1 }, // 맑음
     });
 
+    mockUseCurrentWeather.mockReturnValue({
+      data: {
+        tempC: 23,
+        humidityPct: 65,
+        windMs: 2.1,
+        weatherCode: { pty: 0, sky: 1 },
+        updatedAt: Date.now(),
+      },
+      isLoading: false,
+      error: null,
+      isStale: false,
+      lastUpdated: Date.now(),
+    });
+
     mockUseHourlyWeather.mockReturnValue({
-      data: [
-        { time: "2025-11-12T21:00:00.000Z", tempC: 22 },
-        { time: "2025-11-12T22:00:00.000Z", tempC: 24 },
-      ],
+      data: Array.from({ length: 24 }, (_, i) => ({
+        time: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
+        tempC: 20 + Math.sin(i / 4) * 5, // 파도 형태의 온도 변화
+        humidityPct: 50 + Math.cos(i / 6) * 20, // 습도 변화
+        precipProbPct: i % 6 === 0 ? 30 : 0, // 6시간마다 강수확률
+      })),
     });
 
     render(
@@ -149,24 +182,23 @@ describe("WeatherWidget", () => {
     // 위치 정보 확인
     expect(screen.getByText("서울 송파구 잠실동")).toBeInTheDocument();
 
-    // 온도 표시 확인
-    expect(screen.getByText("23°")).toBeInTheDocument();
+    // 온도 표시 확인 (23°와 맑음이 같은 요소에 있으므로 통합 확인)
+    expect(screen.getByText(/23°/)).toBeInTheDocument();
 
-    // 날씨 상태 확인
-    expect(screen.getByText("맑음")).toBeInTheDocument();
+    // 날씨 상태 확인 (23° 맑음 형태로 표시됨)
+    expect(screen.getByText(/맑음/)).toBeInTheDocument();
 
-    // 추가 정보 확인
-    expect(screen.getByText("습도 65%")).toBeInTheDocument();
-    expect(screen.getByText("바람 2.1m/s")).toBeInTheDocument();
+    // 추가 정보 확인 (WeatherWidget에서는 온도와 날씨 상태만 표시)
 
-    // 대기질 확인
-    expect(screen.getByText("대기질: 보통")).toBeInTheDocument();
+    // 상세보기 링크 확인 (텍스트가 "오늘의 날씨"로 변경됨)
+    expect(screen.getByText("오늘의 날씨")).toBeInTheDocument();
 
-    // 상세보기 링크 확인
-    expect(screen.getByText("상세 날씨 보기")).toBeInTheDocument();
-
-    // 차트가 렌더링되는지 확인
-    expect(screen.getByText("시간별 온도")).toBeInTheDocument();
+    // HourlyChart 컴포넌트가 렌더링되는지 확인
+    // (실제로는 recharts 컴포넌트가 렌더링되므로 DOM에 특정 요소가 있는지 확인)
+    const chartContainer =
+      document.querySelector('[data-testid="hourly-chart"]') ||
+      document.querySelector(".recharts-wrapper");
+    expect(chartContainer).toBeInTheDocument();
   });
 
   it("상세보기 링크를 클릭할 수 있다", async () => {
@@ -188,7 +220,7 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    const link = screen.getByRole("link", { name: /상세 날씨 보기/ });
+    const link = screen.getByRole("link", { name: /오늘의 날씨/ });
     expect(link).toHaveAttribute("href", "/weather");
 
     await user.click(link);
@@ -206,11 +238,12 @@ describe("WeatherWidget", () => {
     });
 
     mockUseHourlyWeather.mockReturnValue({
-      data: [
-        { time: "2025-11-12T21:00:00.000Z", tempC: 22 },
-        { time: "2025-11-12T22:00:00.000Z", tempC: 23 },
-        { time: "2025-11-12T23:00:00.000Z", tempC: 24 },
-      ],
+      data: Array.from({ length: 24 }, (_, i) => ({
+        time: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
+        tempC: 18 + Math.sin(i / 3) * 8, // 24시간 온도 변화
+        humidityPct: 45 + Math.cos(i / 4) * 25,
+        precipProbPct: i % 8 === 0 ? 40 : 10, // 8시간마다 강수확률 증가
+      })),
     });
 
     render(
@@ -219,8 +252,13 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    // 차트 설명 텍스트 확인
-    expect(screen.getByText("시간별 온도")).toBeInTheDocument();
+    // 섹션 제목 확인
+    expect(screen.getByText("시간대별 날씨 예보")).toBeInTheDocument();
+    expect(screen.getByText("시간대별 습도 예보")).toBeInTheDocument();
+
+    // HourlyChart와 HumidityChart가 렌더링되는지 확인 (모킹된 컴포넌트)
+    expect(screen.getByText("HourlyChart Mock")).toBeInTheDocument();
+    expect(screen.getByText("HumidityChart Mock")).toBeInTheDocument();
   });
 
   it("아이콘을 올바르게 표시한다", () => {
@@ -238,7 +276,17 @@ describe("WeatherWidget", () => {
       getIconName: vi.fn().mockReturnValue("cloud-rain"),
       getConditionText: vi.fn().mockReturnValue("비"),
     });
-    mockUseHourlyWeather.mockReturnValue({ data: null });
+
+    mockUseHourlyWeather.mockReturnValue({
+      data: Array.from({ length: 24 }, (_, i) => ({
+        time: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
+        tempC: 20 + Math.sin(i / 4) * 5,
+        humidityPct: 50 + Math.cos(i / 6) * 20,
+        precipProbPct: i % 6 === 0 ? 30 : 0,
+        pty: i % 8 === 0 ? 1 : 0, // 8시간마다 비
+        sky: 3, // 구름많음
+      })),
+    });
 
     render(
       <TestWrapper>
@@ -246,9 +294,13 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    // 비 아이콘이 표시되는지 확인 (이모지로 표시됨)
-    expect(screen.getByText("🌧️")).toBeInTheDocument();
-    expect(screen.getByText("비")).toBeInTheDocument();
+    // 날씨 아이콘과 습도 아이콘이 표시되는지 확인
+    const weatherIcons = screen.getAllByText("🌧️");
+    expect(weatherIcons.length).toBeGreaterThan(0);
+
+    // 습도 아이콘들도 확인 (💧 기본 아이콘)
+    const humidityIcons = screen.getAllByText("💧");
+    expect(humidityIcons.length).toBeGreaterThan(0);
   });
 
   it("데이터가 없을 때 기본값을 표시한다", () => {
@@ -262,6 +314,21 @@ describe("WeatherWidget", () => {
       humidity: null,
       windSpeed: null,
     });
+
+    mockUseCurrentWeather.mockReturnValue({
+      data: {
+        tempC: null,
+        humidityPct: null,
+        windMs: null,
+        weatherCode: { pty: 0, sky: 1 }, // 맑음
+        updatedAt: Date.now(),
+      },
+      isLoading: false,
+      error: null,
+      isStale: false,
+      lastUpdated: Date.now(),
+    });
+
     mockUseHourlyWeather.mockReturnValue({ data: null });
 
     render(
@@ -270,7 +337,9 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    // 기본값 표시 확인
-    expect(screen.getByText("--")).toBeInTheDocument(); // 온도만 표시됨 (습도, 바람은 null이므로 표시되지 않음)
+    // 기본값 표시 확인 (온도가 null이므로 -- 표시)
+    expect(screen.getByText(/-+/)).toBeInTheDocument();
+    // 맑음 텍스트는 모킹된 getConditionText에서 반환됨
+    expect(screen.getByText(/맑음/)).toBeInTheDocument();
   });
 });

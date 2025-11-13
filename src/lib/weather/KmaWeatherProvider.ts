@@ -150,6 +150,64 @@ export class KmaWeatherProvider {
   }
 
   /**
+   * 24시간 시간별 예보 (UltraSrtFcst + VilageFcst 조합)
+   */
+  async getHourlyForecast24h(location: WeatherLocation): Promise<WeatherHourlyPoint[]> {
+    const now = new Date();
+    const baseDate = this.formatDate(now);
+    const baseTime = this.getBaseTimeForForecast(now);
+
+    // 1. UltraSrtFcst (0-6시간) 호출
+    const ultraParams = new URLSearchParams({
+      serviceKey: this.apiKey,
+      pageNo: "1",
+      numOfRows: "60",
+      dataType: "JSON",
+      base_date: baseDate,
+      base_time: baseTime,
+      nx: location.nx.toString(),
+      ny: location.ny.toString(),
+    });
+
+    const ultraUrl = `${this.baseUrl}/VilageFcstInfoService_2.0/getUltraSrtFcst?${ultraParams}`;
+    const ultraResponse = await fetch(ultraUrl);
+    const ultraData: KmaApiResponse<UltraSrtFcstItem> = await ultraResponse.json();
+
+    if (ultraData.response?.header?.resultCode !== "00") {
+      throw new Error(`KMA UltraSrtFcst API Error: ${ultraData.response?.header?.resultMsg}`);
+    }
+
+    const ultraItems = ultraData.response?.body?.items?.item || [];
+
+    // 2. VilageFcst (6-24시간) 호출
+    const vilageParams = new URLSearchParams({
+      serviceKey: this.apiKey,
+      pageNo: "1",
+      numOfRows: "200",
+      dataType: "JSON",
+      base_date: baseDate,
+      base_time: baseTime,
+      nx: location.nx.toString(),
+      ny: location.ny.toString(),
+    });
+
+    const vilageUrl = `${this.baseUrl}/VilageFcstInfoService_2.0/getVilageFcst?${vilageParams}`;
+    const vilageResponse = await fetch(vilageUrl);
+    const vilageData: KmaApiResponse<VilageFcstItem> = await vilageResponse.json();
+
+    if (vilageData.response?.header?.resultCode !== "00") {
+      console.warn(`KMA VilageFcst API Error: ${vilageData.response?.header?.resultMsg}`);
+      // VilageFcst 실패 시 UltraSrtFcst 데이터만 반환
+      return this.parseHourlyForecast(ultraItems);
+    }
+
+    const vilageItems = vilageData.response?.body?.items?.item || [];
+
+    // 3. 두 데이터 소스 조합 및 보간
+    return this.combineAndInterpolateHourlyData(ultraItems, vilageItems);
+  }
+
+  /**
    * 주간 예보 (VilageFcst API)
    */
   async getDailyForecast(location: WeatherLocation): Promise<WeatherDailyPoint[]> {
@@ -180,6 +238,54 @@ export class KmaWeatherProvider {
     const items = data.response?.body?.items?.item || [];
 
     return this.parseDailyForecast(items);
+  }
+
+  /**
+   * 7일 일별 예보 (여러 VilageFcst 호출 조합)
+   */
+  async getDailyForecast7d(location: WeatherLocation): Promise<WeatherDailyPoint[]> {
+    const allItems: VilageFcstItem[] = [];
+    const now = new Date();
+
+    // 오늘부터 3일씩 나누어 호출 (VilageFcst는 최대 3일 제공)
+    for (let days = 0; days < 7; days += 3) {
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() + days);
+
+      const baseDate = this.formatDate(targetDate);
+      const baseTime = "0200"; // 단기예보 발표시간
+
+      const params = new URLSearchParams({
+        serviceKey: this.apiKey,
+        pageNo: "1",
+        numOfRows: "200",
+        dataType: "JSON",
+        base_date: baseDate,
+        base_time: baseTime,
+        nx: location.nx.toString(),
+        ny: location.ny.toString(),
+      });
+
+      const url = `${this.baseUrl}/VilageFcstInfoService_2.0/getVilageFcst?${params}`;
+
+      try {
+        const response = await fetch(url);
+        const data: KmaApiResponse<VilageFcstItem> = await response.json();
+
+        if (data.response?.header?.resultCode === "00") {
+          const items = data.response?.body?.items?.item || [];
+          allItems.push(...items);
+        } else {
+          console.warn(
+            `KMA VilageFcst API Error for ${baseDate}: ${data.response?.header?.resultMsg}`
+          );
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch daily forecast for ${baseDate}:`, error);
+      }
+    }
+
+    return this.parseDailyForecast7d(allItems);
   }
 
   // === PRIVATE METHODS ===
@@ -348,5 +454,180 @@ export class KmaWeatherProvider {
     }
 
     return result.slice(0, 7); // 최대 7일까지만
+  }
+
+  /**
+   * UltraSrtFcst + VilageFcst 데이터를 조합하고 1시간 단위로 보간
+   */
+  private combineAndInterpolateHourlyData(
+    ultraItems: UltraSrtFcstItem[],
+    vilageItems: VilageFcstItem[]
+  ): WeatherHourlyPoint[] {
+    const now = new Date();
+    const result: WeatherHourlyPoint[] = [];
+
+    // 1. UltraSrtFcst 데이터 파싱 (0-6시간)
+    const ultraHourlyData = this.parseHourlyForecast(ultraItems);
+
+    // 2. VilageFcst 데이터를 시간별로 그룹화 (3시간 단위)
+    const vilageHourlyMap = new Map<string, Partial<Record<VilageFcstItem["category"], string>>>();
+
+    for (const item of vilageItems) {
+      if (
+        item.category === "TMP" ||
+        item.category === "REH" ||
+        item.category === "POP" ||
+        item.category === "SKY" ||
+        item.category === "PTY"
+      ) {
+        const timeKey = `${item.fcstDate}${item.fcstTime}`;
+        if (!vilageHourlyMap.has(timeKey)) {
+          vilageHourlyMap.set(timeKey, {});
+        }
+        vilageHourlyMap.get(timeKey)![item.category] = item.fcstValue;
+      }
+    }
+
+    // 3. 24시간 동안 1시간씩 데이터 생성
+    for (let hour = 0; hour < 24; hour++) {
+      const forecastTime = new Date(now);
+      forecastTime.setHours(forecastTime.getHours() + hour);
+
+      if (forecastTime <= now) continue; // 과거 데이터 제외
+
+      let tempC: number | undefined;
+      let humidityPct: number | undefined;
+      let precipProbPct: number | undefined;
+      let sky: 1 | 3 | 4 | undefined;
+      let pty: 0 | 1 | 2 | 3 | 5 | 6 | 7 | undefined;
+
+      // 0-6시간: UltraSrtFcst 데이터 사용
+      if (hour < 6 && ultraHourlyData[hour]) {
+        const ultraPoint = ultraHourlyData[hour];
+        tempC = ultraPoint.tempC;
+        humidityPct = ultraPoint.humidityPct;
+        precipProbPct = ultraPoint.precipProbPct;
+        sky = ultraPoint.sky;
+        pty = ultraPoint.pty;
+      }
+      // 6-24시간: VilageFcst 데이터 사용 (3시간 단위에서 보간)
+      else {
+        const vilageData = this.interpolateVilageDataForHour(vilageHourlyMap, forecastTime);
+        if (vilageData) {
+          tempC = vilageData.tempC;
+          humidityPct = vilageData.humidityPct;
+          precipProbPct = vilageData.precipProbPct;
+          sky = vilageData.sky;
+          pty = vilageData.pty;
+        }
+      }
+
+      // 기본값 설정
+      tempC = tempC ?? 20;
+      humidityPct = humidityPct ?? 50;
+      precipProbPct = precipProbPct ?? 0;
+
+      result.push({
+        time: forecastTime.toISOString(),
+        tempC,
+        humidityPct,
+        precipProbPct,
+        sky,
+        pty,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * 특정 시간에 대한 VilageFcst 데이터를 보간
+   */
+  private interpolateVilageDataForHour(
+    vilageHourlyMap: Map<string, Partial<Record<VilageFcstItem["category"], string>>>,
+    targetTime: Date
+  ): {
+    tempC?: number;
+    humidityPct?: number;
+    precipProbPct?: number;
+    sky?: 1 | 3 | 4;
+    pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+  } | null {
+    const targetDateStr = this.formatDate(targetTime);
+    const targetHour = targetTime.getHours();
+
+    // 가장 가까운 3시간 단위 시간 찾기 (3시간 단위로 반올림)
+    const baseHour = Math.floor(targetHour / 3) * 3;
+    const baseTime = baseHour.toString().padStart(2, "0") + "00";
+    const timeKey = `${targetDateStr}${baseTime}`;
+
+    const data = vilageHourlyMap.get(timeKey);
+    if (!data) return null;
+
+    return {
+      tempC: data.TMP ? parseFloat(data.TMP) : undefined,
+      humidityPct: data.REH ? parseInt(data.REH) : undefined,
+      precipProbPct: data.POP ? parseInt(data.POP) : undefined,
+      sky: data.SKY ? (parseInt(data.SKY) as 1 | 3 | 4) : undefined,
+      pty: data.PTY ? (parseInt(data.PTY) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined,
+    };
+  }
+
+  /**
+   * 7일 일별 예보 파싱 (중복 제거 및 정렬)
+   */
+  private parseDailyForecast7d(items: VilageFcstItem[]): WeatherDailyPoint[] {
+    // 날짜별로 그룹화
+    const groupedByDate: DailyGroupedData = {};
+
+    for (const item of items) {
+      const dateKey = item.fcstDate; // YYYYMMDD 형식
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = {};
+      }
+      // 최신 값으로 덮어쓰기 (중복 호출로 인한 데이터 중복 방지)
+      groupedByDate[dateKey][item.category] = item.fcstValue;
+    }
+
+    // 날짜순으로 정렬하여 변환
+    const sortedDates = Object.keys(groupedByDate).sort();
+    const result: WeatherDailyPoint[] = [];
+
+    for (const dateStr of sortedDates) {
+      const data = groupedByDate[dateStr];
+
+      // 날짜 파싱
+      const year = parseInt(dateStr.substring(0, 4));
+      const month = parseInt(dateStr.substring(4, 6)) - 1; // JS에서 month는 0-based
+      const day = parseInt(dateStr.substring(6, 8));
+
+      const point: WeatherDailyPoint = {
+        date: `${year}-${(month + 1).toString().padStart(2, "0")}-${day
+          .toString()
+          .padStart(2, "0")}`,
+        minC: data.TMN ? parseFloat(data.TMN) : 0,
+        maxC: data.TMX ? parseFloat(data.TMX) : 0,
+        precipProbMaxPct: data.POP ? parseInt(data.POP) : undefined,
+        sky: data.SKY ? (parseInt(data.SKY) as 1 | 3 | 4) : undefined,
+        pty: data.PTY ? (parseInt(data.PTY) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined,
+      };
+
+      result.push(point);
+    }
+
+    // 오늘부터 7일치 데이터만 반환
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return result
+      .filter((point) => {
+        const pointDate = new Date(point.date);
+        pointDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor(
+          (pointDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return diffDays >= 0 && diffDays < 7;
+      })
+      .slice(0, 7);
   }
 }
