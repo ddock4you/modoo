@@ -14,7 +14,7 @@ import {
   Bar,
   CartesianGrid,
 } from "recharts";
-import { WeatherDailyPoint } from "../../domain/types";
+import type { WeatherDailyPoint } from "../../domain/types";
 
 export interface DailyChartProps {
   points: WeatherDailyPoint[];

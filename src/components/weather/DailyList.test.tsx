@@ -39,7 +39,7 @@ vi.mock("../../lib/weather/iconMap", () => ({
 describe("DailyList", () => {
   const mockDailyData: WeatherDailyPoint[] = [
     {
-      date: Date.now(), // 오늘
+      date: new Date().toISOString().split("T")[0], // 오늘 (yyyy-mm-dd)
       minC: 15,
       maxC: 25,
       pty: undefined,
@@ -48,7 +48,7 @@ describe("DailyList", () => {
       humidityPct: 60,
     },
     {
-      date: Date.now() + 24 * 60 * 60 * 1000, // 내일
+      date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 내일
       minC: 12,
       maxC: 22,
       pty: 1, // 비
@@ -57,7 +57,7 @@ describe("DailyList", () => {
       humidityPct: 70,
     },
     {
-      date: Date.now() + 2 * 24 * 60 * 60 * 1000, // 모레
+      date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 모레
       minC: 18,
       maxC: 28,
       pty: undefined,
@@ -166,7 +166,7 @@ describe("DailyList", () => {
   it("기본적으로 최대 7개 아이템을 표시해야 함", () => {
     const manyItems = Array.from({ length: 10 }, (_, i) => ({
       ...mockDailyData[0],
-      date: Date.now() + i * 24 * 60 * 60 * 1000,
+      date: new Date(Date.now() + i * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     }));
 
     render(<DailyList points={manyItems} />);

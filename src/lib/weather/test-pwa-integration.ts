@@ -69,10 +69,10 @@ export async function testOnlineWeatherCaching() {
     const startTime = Date.now();
 
     const [nowData, hourlyData, dailyData, airQualityData] = await Promise.all([
-      weatherRepository.getNow(TEST_LOCATION),
-      weatherRepository.getHourly(TEST_LOCATION),
-      weatherRepository.getDaily(TEST_LOCATION),
-      weatherRepository.getAirQuality(TEST_LOCATION),
+      weatherRepository.getNow(TEST_LOCATION.id),
+      weatherRepository.getHourly(TEST_LOCATION.id),
+      weatherRepository.getDaily(TEST_LOCATION.id),
+      weatherRepository.getAirQuality(TEST_LOCATION.id),
     ]);
 
     const endTime = Date.now();
@@ -96,7 +96,7 @@ export async function testOnlineWeatherCaching() {
     };
   } catch (error) {
     console.error("온라인 테스트 실패:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -112,10 +112,10 @@ export async function testCachedWeatherRequests() {
     const startTime = Date.now();
 
     const [nowData, hourlyData, dailyData, airQualityData] = await Promise.all([
-      weatherRepository.getNow(TEST_LOCATION),
-      weatherRepository.getHourly(TEST_LOCATION),
-      weatherRepository.getDaily(TEST_LOCATION),
-      weatherRepository.getAirQuality(TEST_LOCATION),
+      weatherRepository.getNow(TEST_LOCATION.id),
+      weatherRepository.getHourly(TEST_LOCATION.id),
+      weatherRepository.getDaily(TEST_LOCATION.id),
+      weatherRepository.getAirQuality(TEST_LOCATION.id),
     ]);
 
     const endTime = Date.now();
@@ -138,7 +138,7 @@ export async function testCachedWeatherRequests() {
     };
   } catch (error) {
     console.error("캐시 테스트 실패:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 
@@ -168,10 +168,10 @@ export async function testOfflineWeatherAccess() {
     const startTime = Date.now();
 
     const results = await Promise.allSettled([
-      weatherRepository.getNow(TEST_LOCATION),
-      weatherRepository.getHourly(TEST_LOCATION),
-      weatherRepository.getDaily(TEST_LOCATION),
-      weatherRepository.getAirQuality(TEST_LOCATION),
+      weatherRepository.getNow(TEST_LOCATION.id),
+      weatherRepository.getHourly(TEST_LOCATION.id),
+      weatherRepository.getDaily(TEST_LOCATION.id),
+      weatherRepository.getAirQuality(TEST_LOCATION.id),
     ]);
 
     const endTime = Date.now();
@@ -199,7 +199,7 @@ export async function testOfflineWeatherAccess() {
     };
   } catch (error) {
     console.error("오프라인 테스트 실패:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   } finally {
     // 온라인 상태 복원
     Object.defineProperty(navigator, "onLine", { value: originalOnLine, writable: true });
@@ -239,7 +239,7 @@ export async function testCacheExpiration() {
     return { success: true };
   } catch (error) {
     console.error("캐시 만료 테스트 실패:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: (error as Error).message };
   }
 }
 

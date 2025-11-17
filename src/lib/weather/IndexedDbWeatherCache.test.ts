@@ -21,7 +21,8 @@ describe("IndexedDbWeatherCache", () => {
 
       expect(ttlConfig.now).toBe(10); // 10분
       expect(ttlConfig.hourly).toBe(60); // 60분
-      expect(ttlConfig.daily).toBe(6 * 60); // 6시간
+      expect(ttlConfig.shortTermDaily).toBe(6 * 60); // 6시간
+      expect(ttlConfig.midTermDaily).toBe(12 * 60); // 12시간
       expect(ttlConfig.airQuality).toBe(60); // 60분
     });
 
@@ -66,11 +67,11 @@ describe("IndexedDbWeatherCache", () => {
       expect(calculatedExpiresAt).toBe(expectedExpiresAt);
     });
 
-    it("일별 날씨 TTL을 올바르게 계산해야 함", () => {
+    it("단기예보 일별 날씨 TTL을 올바르게 계산해야 함", () => {
       const now = Date.now();
       const expectedExpiresAt = now + 6 * 60 * 60 * 1000; // 6시간
 
-      const ttlMinutes = (cache as any).TTL_MINUTES.daily;
+      const ttlMinutes = (cache as any).TTL_MINUTES.shortTermDaily;
       const calculatedExpiresAt = now + ttlMinutes * 60 * 1000;
 
       expect(calculatedExpiresAt).toBe(expectedExpiresAt);

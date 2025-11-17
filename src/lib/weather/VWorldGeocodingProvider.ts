@@ -215,7 +215,10 @@ export class VWorldGeocodingProvider {
       const expiredKeys: string[] = [];
       const index = db.transaction("weather_geocoding_cache").store.index("byExpiresAt");
 
-      for await (const cursor of index.iterate(null, IDBKeyRange.upperBound(now))) {
+      for await (const cursor of index.iterate(
+        null,
+        (globalThis as any).IDBKeyRange.upperBound(now)
+      )) {
         expiredKeys.push(cursor.value.key);
       }
 

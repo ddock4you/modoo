@@ -55,7 +55,7 @@ export function latLonToGrid(lat: number, lon: number): { nx: number; ny: number
 /**
  * DFS 격자(nx, ny)를 위경도로 변환 (필요시 구현)
  */
-export function gridToLatLon(nx: number, ny: number): { lat: number; lon: number } {
+export function gridToLatLon(_nx: number, _ny: number): { lat: number; lon: number } {
   // 역변환은 필요시 구현
   throw new Error("gridToLatLon is not implemented yet");
 }

@@ -355,8 +355,8 @@ export class KmaWeatherProvider {
       throw new Error(`KMA MidTa API Error: ${data.response?.header?.resultMsg}`);
     }
 
-    const result = data.response?.body?.items?.item || ({} as MidTaItem);
-    return result;
+    const result = data.response?.body?.items?.item || ({} as any);
+    return result as unknown as MidTaItem;
   }
 
   /**
@@ -385,14 +385,14 @@ export class KmaWeatherProvider {
       throw new Error(`KMA MidLandFcst API Error: ${data.response?.header?.resultMsg}`);
     }
 
-    const result = data.response?.body?.items?.item || ({} as MidLandFcstItem);
-    return result;
+    const result = data.response?.body?.items?.item || ({} as any);
+    return result as unknown as MidLandFcstItem;
   }
 
   /**
    * 격자 좌표를 중기예보 지역코드로 변환
    */
-  private convertGridToRegId(nx: number, ny: number): string {
+  private convertGridToRegId(_nx: number, _ny: number): string {
     // 간단한 매핑 (실제로는 더 정교한 변환 필요)
     // 서울/경기: 11B10101, 11B10102, 11B10103, 11B10104
     // 부산: 11H20101, 11H20102, 11H20103, 11H20104
@@ -548,18 +548,6 @@ export class KmaWeatherProvider {
   }
 
   /**
-   * 기존 단기예보 방식으로 폴백
-   * - VilageFcst를 사용해 최대 7일치 일별 예보를 생성
-   */
-  private async getDailyForecast7dFallback(
-    location: WeatherLocation
-  ): Promise<WeatherDailyPoint[]> {
-    const allItems = await this.fetchVilageFcstItemsFor7d(location);
-
-    return this.parseDailyForecast7d(allItems);
-  }
-
-  /**
    * 단기예보 기반 0~3일 일별 예보 생성
    *
    * - VilageFcst의 3시간 간격 TMP를 이용해
@@ -692,7 +680,7 @@ export class KmaWeatherProvider {
       this.getMidLandForecast(regId),
     ]);
 
-    const allMid = this.combineMidForecastData(tempData, landData);
+    const allMid = this.combineMidForecastData([tempData], [landData]);
 
     // 한국 시간대 기준 오늘 날짜
     const kstOffset = 9 * 60 * 60 * 1000;
@@ -736,25 +724,6 @@ export class KmaWeatherProvider {
       // 현재 시간이 30분 이후면 현재 시간의 30분 발표
       return hour.toString().padStart(2, "0") + "30";
     }
-  }
-
-  /**
-   * 예보 발표시간 결정
-   * 2, 5, 8, 11, 14, 17, 20, 23시 발표
-   */
-  private getBaseTimeForForecast(now: Date): string {
-    const hour = now.getHours();
-    const baseTimes = [2, 5, 8, 11, 14, 17, 20, 23];
-
-    // 현재 시간보다 작거나 같은 가장 최근 발표시간 찾기
-    for (let i = baseTimes.length - 1; i >= 0; i--) {
-      if (hour >= baseTimes[i]) {
-        return baseTimes[i].toString().padStart(2, "0") + "00";
-      }
-    }
-
-    // 자정을 넘었으면 전날 마지막 발표시간
-    return "2300";
   }
 
   private parseCurrentWeather(items: UltraSrtNcstItem[], timestamp: number): WeatherNow {
@@ -1000,63 +969,5 @@ export class KmaWeatherProvider {
       sky: sky != null && !isNaN(sky) ? sky : undefined,
       pty: pty != null && !isNaN(pty) ? pty : undefined,
     };
-  }
-
-  /**
-   * 7일 일별 예보 파싱 (중복 제거 및 정렬)
-   */
-  private parseDailyForecast7d(items: VilageFcstItem[]): WeatherDailyPoint[] {
-    // 날짜별로 그룹화
-    const groupedByDate: DailyGroupedData = {};
-
-    for (const item of items) {
-      const dateKey = item.fcstDate; // YYYYMMDD 형식
-      if (!groupedByDate[dateKey]) {
-        groupedByDate[dateKey] = {};
-      }
-      // 최신 값으로 덮어쓰기 (중복 호출로 인한 데이터 중복 방지)
-      groupedByDate[dateKey][item.category] = item.fcstValue;
-    }
-
-    // 날짜순으로 정렬하여 변환
-    const sortedDates = Object.keys(groupedByDate).sort();
-    const result: WeatherDailyPoint[] = [];
-
-    for (const dateStr of sortedDates) {
-      const data = groupedByDate[dateStr];
-
-      // 날짜 파싱
-      const year = parseInt(dateStr.substring(0, 4));
-      const month = parseInt(dateStr.substring(4, 6)) - 1; // JS에서 month는 0-based
-      const day = parseInt(dateStr.substring(6, 8));
-
-      const point: WeatherDailyPoint = {
-        date: `${year}-${(month + 1).toString().padStart(2, "0")}-${day
-          .toString()
-          .padStart(2, "0")}`,
-        minC: data.TMN ? parseFloat(data.TMN) : 0,
-        maxC: data.TMX ? parseFloat(data.TMX) : 0,
-        precipProbMaxPct: data.POP ? parseInt(data.POP) : undefined,
-        sky: data.SKY ? (parseInt(data.SKY) as 1 | 3 | 4) : undefined,
-        pty: data.PTY ? (parseInt(data.PTY) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined,
-      };
-
-      result.push(point);
-    }
-
-    // 오늘부터 7일치 데이터만 반환
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    return result
-      .filter((point) => {
-        const pointDate = new Date(point.date);
-        pointDate.setHours(0, 0, 0, 0);
-        const diffDays = Math.floor(
-          (pointDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        return diffDays >= 0 && diffDays < 7;
-      })
-      .slice(0, 7);
   }
 }

@@ -223,7 +223,7 @@ export function useWeatherFormat() {
     return `${speed.toFixed(1)}m/s`;
   };
 
-  const formatAirQuality = (grade?: string, value?: number): string => {
+  const formatAirQuality = (grade?: string): string => {
     if (!grade) return "--";
     return grade;
   };

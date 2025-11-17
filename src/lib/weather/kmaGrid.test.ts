@@ -99,7 +99,7 @@ describe("KMA 격자 변환", () => {
         [35.1595, 126.8526, 58, 74, "Gwangju"],
       ];
 
-      testCases.forEach(([lat, lon, expectedNx, expectedNy, cityName]) => {
+      testCases.forEach(([lat, lon, expectedNx, expectedNy]) => {
         const result = latLonToGrid(lat as number, lon as number);
 
         // 실제 변환 값이 예상 범위 내에 있는지 확인

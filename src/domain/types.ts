@@ -136,6 +136,7 @@ export interface WeatherDailyPoint {
   precipProbMaxPct?: number;
   sky?: 1 | 3 | 4;
   pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+  humidityPct?: number;
 }
 
 export interface AirQuality {

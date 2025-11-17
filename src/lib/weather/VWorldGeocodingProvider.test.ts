@@ -405,8 +405,14 @@ describe("VWorldGeocodingProvider", () => {
       mockDB.transaction.mockReturnValue(mockTransaction);
 
       // IDBKeyRange mock 설정
-      global.IDBKeyRange = {
-        upperBound: vi.fn(() => ({})), // mock range object
+      (global as any).IDBKeyRange = {
+        upperBound: vi.fn(() => ({
+          lower: 0,
+          upper: Date.now(),
+          lowerOpen: false,
+          upperOpen: false,
+          includes: vi.fn(),
+        })), // mock range object
       };
 
       await provider.cleanupExpiredCache();

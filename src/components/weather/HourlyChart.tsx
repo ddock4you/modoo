@@ -15,9 +15,8 @@ import {
   Area,
   Bar,
   CartesianGrid,
-  XAxisProps,
 } from "recharts";
-import { WeatherHourlyPoint } from "../../domain/types";
+import type { WeatherHourlyPoint } from "../../domain/types";
 
 export interface HourlyChartProps {
   points: WeatherHourlyPoint[];

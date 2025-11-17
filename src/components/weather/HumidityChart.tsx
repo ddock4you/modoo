@@ -16,7 +16,7 @@ import {
   ReferenceLine,
   ReferenceArea,
 } from "recharts";
-import { WeatherHourlyPoint } from "../../domain/types";
+import type { WeatherHourlyPoint } from "../../domain/types";
 
 export interface HumidityChartProps {
   points: WeatherHourlyPoint[];

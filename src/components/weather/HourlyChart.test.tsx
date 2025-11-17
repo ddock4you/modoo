@@ -25,7 +25,7 @@ vi.mock("recharts", () => ({
 describe("HourlyChart", () => {
   const mockHourlyData: WeatherHourlyPoint[] = [
     {
-      time: Date.now(),
+      time: new Date().toISOString(),
       tempC: 20,
       humidityPct: 60,
       precipProbPct: 10,
@@ -33,7 +33,7 @@ describe("HourlyChart", () => {
       sky: 1,
     },
     {
-      time: Date.now() + 60 * 60 * 1000, // 1시간 후
+      time: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1시간 후
       tempC: 22,
       humidityPct: 55,
       precipProbPct: 5,
@@ -41,7 +41,7 @@ describe("HourlyChart", () => {
       sky: 3,
     },
     {
-      time: Date.now() + 2 * 60 * 60 * 1000, // 2시간 후
+      time: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2시간 후
       tempC: 25,
       humidityPct: 50,
       precipProbPct: 20,
@@ -100,7 +100,7 @@ describe("HourlyChart", () => {
   it("데이터를 24시간으로 제한해야 함", () => {
     const manyHoursData = Array.from({ length: 30 }, (_, i) => ({
       ...mockHourlyData[0],
-      time: Date.now() + i * 60 * 60 * 1000,
+      time: new Date(Date.now() + i * 60 * 60 * 1000).toISOString(),
     }));
 
     render(<HourlyChart points={manyHoursData} />);

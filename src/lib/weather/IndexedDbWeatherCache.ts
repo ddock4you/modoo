@@ -1,4 +1,4 @@
-import { initDB, type ModooDB } from "../storage/db";
+import { initDB } from "../storage/db";
 import type {
   WeatherLocation,
   WeatherNow,
@@ -7,6 +7,22 @@ import type {
   AirQuality,
   WeatherCacheEntry,
 } from "../../domain/types";
+
+// Weather 전용 DB 타입
+export interface WeatherDB {
+  weather_now: WeatherCacheEntry;
+  weather_hourly: WeatherCacheEntry;
+  weather_daily: WeatherCacheEntry;
+  air_quality: WeatherCacheEntry;
+  weather_locations: WeatherLocation;
+  weather_geocoding_cache: {
+    key: string;
+    address: string;
+    lat: number;
+    lon: number;
+    expiresAt: number;
+  };
+}
 
 export interface WeatherCacheResult<T = any> {
   data: T;
@@ -19,7 +35,7 @@ export interface WeatherCacheResult<T = any> {
  * TTL 기반 캐시 관리 및 SWR 패턴을 지원합니다.
  */
 export class IndexedDbWeatherCache {
-  private db: ModooDB | null = null;
+  private db: any = null;
 
   // TTL 설정 (분 단위)
   private readonly TTL_MINUTES = {
@@ -34,7 +50,7 @@ export class IndexedDbWeatherCache {
   private readonly MAX_DAYS_PER_LOCATION = 7;
 
   async init(): Promise<void> {
-    this.db = await initDB();
+    this.db = (await initDB()) as unknown as WeatherDB;
   }
 
   /**
@@ -44,7 +60,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<WeatherNow> | null> {
-    return this.getCacheEntry("weather_now", [locationId, baseTime]);
+    return this.getCacheEntry("weather_now", locationId, baseTime);
   }
 
   /**
@@ -52,7 +68,7 @@ export class IndexedDbWeatherCache {
    */
   async setNow(locationId: string, baseTime: number, data: WeatherNow): Promise<void> {
     const expiresAt = Date.now() + this.TTL_MINUTES.now * 60 * 1000;
-    await this.setCacheEntry("weather_now", [locationId, baseTime], {
+    await this.setCacheEntry("weather_now", {
       locationId,
       baseTime,
       data,
@@ -70,7 +86,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<WeatherHourlyPoint[]> | null> {
-    return this.getCacheEntry("weather_hourly", [locationId, baseTime]);
+    return this.getCacheEntry("weather_hourly", locationId, baseTime);
   }
 
   /**
@@ -78,7 +94,7 @@ export class IndexedDbWeatherCache {
    */
   async setHourly(locationId: string, baseTime: number, data: WeatherHourlyPoint[]): Promise<void> {
     const expiresAt = Date.now() + this.TTL_MINUTES.hourly * 60 * 1000;
-    await this.setCacheEntry("weather_hourly", [locationId, baseTime], {
+    await this.setCacheEntry("weather_hourly", {
       locationId,
       baseTime,
       data,
@@ -95,9 +111,10 @@ export class IndexedDbWeatherCache {
   async getDaily(
     locationId: string,
     baseTime: number,
-    type: "short" | "mid" = "short"
+    _type: "short" | "mid" = "short" // 현재 구현에서는 사용하지 않음
   ): Promise<WeatherCacheResult<WeatherDailyPoint[]> | null> {
-    return this.getCacheEntry("weather_daily", [locationId, type, baseTime]);
+    // type 파라미터는 현재 사용하지 않음
+    return this.getCacheEntry("weather_daily", locationId, baseTime);
   }
 
   /**
@@ -113,9 +130,8 @@ export class IndexedDbWeatherCache {
       type === "mid" ? this.TTL_MINUTES.midTermDaily : this.TTL_MINUTES.shortTermDaily;
     const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
 
-    await this.setCacheEntry("weather_daily", [locationId, type, baseTime], {
+    await this.setCacheEntry("weather_daily", {
       locationId,
-      type,
       baseTime,
       data,
       expiresAt,
@@ -132,7 +148,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<AirQuality> | null> {
-    return this.getCacheEntry("air_quality", [locationId, baseTime]);
+    return this.getCacheEntry("air_quality", locationId, baseTime);
   }
 
   /**
@@ -140,7 +156,7 @@ export class IndexedDbWeatherCache {
    */
   async setAirQuality(locationId: string, baseTime: number, data: AirQuality): Promise<void> {
     const expiresAt = Date.now() + this.TTL_MINUTES.airQuality * 60 * 1000;
-    await this.setCacheEntry("air_quality", [locationId, baseTime], {
+    await this.setCacheEntry("air_quality", {
       locationId,
       baseTime,
       data,
@@ -221,7 +237,7 @@ export class IndexedDbWeatherCache {
    */
   private async enforceRetentionLimit(
     storeName: keyof Pick<
-      ModooDB,
+      WeatherDB,
       "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
     >,
     locationId: string
@@ -267,14 +283,17 @@ export class IndexedDbWeatherCache {
    */
   private async getCacheEntry<T>(
     storeName: keyof Pick<
-      ModooDB,
+      WeatherDB,
       "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
     >,
-    key: [string, number]
+    locationId: string,
+    baseTime: number
   ): Promise<WeatherCacheResult<T> | null> {
     if (!this.db) await this.init();
 
     try {
+      // 키 생성
+      const key = [locationId, baseTime];
       const entry = await this.db!.get(storeName, key);
       if (!entry) return null;
 
@@ -297,10 +316,9 @@ export class IndexedDbWeatherCache {
    */
   private async setCacheEntry(
     storeName: keyof Pick<
-      ModooDB,
+      WeatherDB,
       "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
     >,
-    key: [string, number],
     entry: WeatherCacheEntry
   ): Promise<void> {
     if (!this.db) await this.init();

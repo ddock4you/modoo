@@ -110,7 +110,7 @@ describe("날씨 타입", () => {
         tempC: 22.0,
         humidityPct: 60,
         precipProbPct: 20,
-        sky: 2,
+        sky: 3,
         pty: 0,
       };
 
@@ -118,7 +118,7 @@ describe("날씨 타입", () => {
       expect(hourlyPoint.tempC).toBe(22.0);
       expect(hourlyPoint.humidityPct).toBe(60);
       expect(hourlyPoint.precipProbPct).toBe(20);
-      expect(hourlyPoint.sky).toBe(2);
+      expect(hourlyPoint.sky).toBe(3);
       expect(hourlyPoint.pty).toBe(0);
     });
 

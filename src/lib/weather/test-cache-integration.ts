@@ -25,7 +25,7 @@ const mockWeatherNow: WeatherNow = {
   humidityPct: 65,
   windMs: 2.8,
   precipProbPct: 20,
-  weatherCode: { sky: 2, pty: 0 },
+  weatherCode: { sky: 3, pty: 0 },
   updatedAt: Date.now(),
 };
 
@@ -35,7 +35,7 @@ const mockWeatherHourly: WeatherHourlyPoint[] = [
     tempC: 23.0,
     humidityPct: 60,
     precipProbPct: 10,
-    sky: 2,
+    sky: 3,
     pty: 0,
   },
   {
@@ -54,7 +54,7 @@ const mockWeatherDaily: WeatherDailyPoint[] = [
     minC: 18.0,
     maxC: 26.0,
     precipProbMaxPct: 20,
-    sky: 2,
+    sky: 3,
     pty: 0,
   },
   {
@@ -174,7 +174,6 @@ async function testTTLAndExpiration(): Promise<void> {
 
   try {
     const testTime = Date.now();
-    const shortTTLTime = testTime - 1000; // 1초 전 (만료된 데이터)
 
     // 만료된 데이터 저장 시뮬레이션
     console.log("1. 다양한 TTL 값 테스트...");
@@ -273,7 +272,7 @@ async function checkDBStatus(): Promise<void> {
     ];
     for (const storeName of stores) {
       try {
-        const tx = db.transaction(storeName, "readonly");
+        const tx = (db as any).transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
         const count = await store.count();
         console.log(`   📊 ${storeName}: ${count}개 레코드`);
@@ -298,7 +297,7 @@ async function forceDBUpgrade(): Promise<void> {
       const dbName = "modoo";
       const deleteRequest = (window as any).indexedDB.deleteDatabase(dbName);
 
-      await new Promise((resolve, reject) => {
+      await new Promise((resolve) => {
         deleteRequest.onsuccess = () => {
           console.log("🗑️ 기존 DB 삭제 완료");
           resolve(void 0);

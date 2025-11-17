@@ -89,8 +89,6 @@ export class AirKoreaProvider {
   private readonly apiKey: string;
 
   // 캐시 TTL 설정
-  private readonly STATION_CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간
-  private readonly AIR_QUALITY_CACHE_TTL = 60 * 60 * 1000; // 60분
 
   constructor(apiKey: string) {
     this.baseUrl = "https://apis.data.go.kr/B552584";
@@ -101,8 +99,6 @@ export class AirKoreaProvider {
    * TM 좌표 기준 근접 측정소 목록 조회
    */
   async getNearbyStations(tmX: number, tmY: number): Promise<Station[]> {
-    const cacheKey = `tm_${Math.floor(tmX)}_${Math.floor(tmY)}`;
-
     // 캐시 확인 (실제 구현에서는 IndexedDbWeatherCache에서 확인)
     // TODO: 캐시 구현 연동
 
@@ -127,12 +123,15 @@ export class AirKoreaProvider {
       }
 
       const items = data.response?.body?.items;
-      if (!items || items.length === 0) {
+      // items가 단일 객체면 배열로 변환
+      const itemsArray = Array.isArray(items) ? items : items ? [items] : [];
+
+      if (!itemsArray || itemsArray.length === 0) {
         throw new Error("No nearby stations found");
       }
 
       // 응답 데이터를 내부 타입으로 변환
-      return items.map((item) => ({
+      return itemsArray.map((item) => ({
         name: item.stationName,
         address: item.addr,
         distance: item.tm,
@@ -149,8 +148,6 @@ export class AirKoreaProvider {
    * 측정소명으로 실시간 대기질 정보 조회
    */
   async getAirQuality(stationName: string): Promise<AirQuality> {
-    const cacheKey = `station_${stationName}`;
-
     // 캐시 확인 (실제 구현에서는 IndexedDbWeatherCache에서 확인)
     // TODO: 캐시 구현 연동
 
@@ -175,12 +172,15 @@ export class AirKoreaProvider {
       }
 
       const items = data.response?.body?.items;
-      if (!items || items.length === 0) {
+      // items가 단일 객체면 배열로 변환
+      const itemsArray = Array.isArray(items) ? items : items ? [items] : [];
+
+      if (!itemsArray || itemsArray.length === 0) {
         throw new Error(`No air quality data for station: ${stationName}`);
       }
 
       // 최신 데이터 사용 (첫 번째 항목)
-      const latestData = items[0];
+      const latestData = itemsArray[0];
 
       const parseNumericValue = (value: string): number | null => {
         if (!value || value === "-" || value.trim() === "") return null;

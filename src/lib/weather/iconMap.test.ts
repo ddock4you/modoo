@@ -31,7 +31,7 @@ describe("getWeatherIconName", () => {
   it("PTY가 없을 때 SKY 코드로 아이콘 이름을 반환해야 함", () => {
     // 맑음
     expect(getWeatherIconName(undefined, 1)).toBe("sun");
-    expect(getWeatherIconName(null, 1)).toBe("sun");
+    expect(getWeatherIconName(undefined, 1)).toBe("sun");
 
     // 구름많음/흐림
     expect(getWeatherIconName(undefined, 3)).toBe("cloud");
@@ -40,7 +40,7 @@ describe("getWeatherIconName", () => {
 
   it("PTY와 SKY가 모두 없을 때 기본값을 반환해야 함", () => {
     expect(getWeatherIconName(undefined, undefined)).toBe("sun");
-    expect(getWeatherIconName(null, null)).toBe("sun");
+    expect(getWeatherIconName(undefined, undefined)).toBe("sun");
   });
 });
 

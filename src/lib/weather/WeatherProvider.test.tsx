@@ -2,16 +2,22 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WeatherProvider, useWeatherContext } from "./WeatherProvider";
-import type {
-  WeatherNow,
-  WeatherHourlyPoint,
-  WeatherDailyPoint,
-  AirQuality,
-} from "../../domain/types";
 
 // 모킹 설정
 const mockGetCurrentPosition = vi.fn();
 const mockPermissionsQuery = vi.fn();
+
+// PermissionStatus 모킹
+const mockPermissionStatus = {
+  state: "granted" as const,
+  addEventListener: vi.fn((_type: string, _listener: EventListener) => {
+    // EventTarget 인터페이스 구현
+  }),
+  removeEventListener: vi.fn((_type: string, _listener: EventListener) => {
+    // EventTarget 인터페이스 구현
+  }),
+  dispatchEvent: vi.fn(),
+};
 
 // setup.ts의 기본 모킹을 override
 Object.defineProperty(navigator, "geolocation", {
@@ -24,7 +30,7 @@ Object.defineProperty(navigator, "geolocation", {
 
 Object.defineProperty(navigator, "permissions", {
   value: {
-    query: mockPermissionsQuery,
+    query: vi.fn().mockResolvedValue(mockPermissionStatus),
   },
   writable: true,
 });
@@ -39,7 +45,7 @@ function TestComponent() {
       <div data-testid="online">{context.isOnline ? "online" : "offline"}</div>
       <div data-testid="loading">{context.isLoading ? "loading" : "loaded"}</div>
       <div data-testid="error">{context.error?.message || "no error"}</div>
-      <div data-testid="now-temp">{context.nowQuery.data?.temperature || "no data"}</div>
+      <div data-testid="now-temp">{context.nowQuery.data?.tempC || "no data"}</div>
       <button data-testid="refresh" onClick={context.refreshWeather}>
         Refresh
       </button>
@@ -66,7 +72,7 @@ describe("WeatherProvider", () => {
     mockPermissionsQuery.mockClear();
 
     // 기본 모킹 설정
-    mockPermissionsQuery.mockResolvedValue({ state: "prompt" });
+    mockPermissionsQuery.mockResolvedValue(mockPermissionStatus);
     mockGetCurrentPosition.mockImplementation((success) => {
       success({
         coords: {
@@ -134,9 +140,11 @@ describe("WeatherProvider", () => {
 
     it("GPS 호출 실패 시 기본 위치를 사용해야 함", async () => {
       (navigator.permissions.query as any).mockResolvedValue({ state: "granted" });
-      (navigator.geolocation.getCurrentPosition as any).mockImplementation((success, error) => {
-        error && error(new Error("GPS Error"));
-      });
+      (navigator.geolocation.getCurrentPosition as any).mockImplementation(
+        (_success: any, error: any) => {
+          error && error(new Error("GPS Error"));
+        }
+      );
 
       renderWithProviders(<TestComponent />);
 

@@ -3,8 +3,6 @@
  * PTY(강수형태)와 SKY(하늘상태) 코드를 Lucide 아이콘으로 변환
  */
 
-import { LucideIcon } from "lucide-react";
-
 /**
  * PTY 코드별 아이콘 매핑
  * 0: 없음, 1: 비, 2: 비/눈, 3: 눈, 4: 소나기, 5: 빗방울, 6: 빗방울/눈날림, 7: 눈날림

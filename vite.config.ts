@@ -17,9 +17,9 @@ export default defineConfig({
         target: "https://api.vworld.kr",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/vworld/, ""),
-        configure: (proxy, options) => {
+        configure: (proxy) => {
           // CORS 헤더 추가
-          proxy.on("proxyReq", (proxyReq, req, res) => {
+          proxy.on("proxyReq", (proxyReq) => {
             proxyReq.setHeader("Access-Control-Allow-Origin", "*");
           });
         },

@@ -60,7 +60,7 @@ describe("좌표 변환", () => {
         [35.5384, 129.3114, "Ulsan"],
       ];
 
-      testCases.forEach(([lat, lon, cityName]) => {
+      testCases.forEach(([lat, lon]) => {
         const result = latLonToTM(lat as number, lon as number);
 
         // TM 좌표는 한국 영역 내에서 적절한 범위여야 함
@@ -127,7 +127,7 @@ describe("좌표 변환", () => {
         [35.1595, 126.8526, "Gwangju"],
       ];
 
-      testCoordinates.forEach(([lat, lon, cityName]) => {
+      testCoordinates.forEach(([lat, lon]) => {
         // 3번 왕복 변환
         let currentLat = lat as number;
         let currentLon = lon as number;
@@ -212,7 +212,7 @@ describe("좌표 변환", () => {
         [35.8714, 128.6014, "대구 중구"],
       ];
 
-      monitoringStations.forEach(([lat, lon, stationName]) => {
+      monitoringStations.forEach(([lat, lon]) => {
         const tm = latLonToTM(lat as number, lon as number);
 
         // AirKorea API에서 사용하는 TM 좌표 범위 (실제 100만대 좌표)

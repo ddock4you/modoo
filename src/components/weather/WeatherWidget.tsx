@@ -21,7 +21,7 @@ export function WeatherWidget() {
   const currentWeather = useCurrentWeather();
   const dailyWeather = useDailyWeather();
   const { getIconName, getConditionText } = useWeatherIcon();
-  const { formatTemperature, formatHumidity } = useWeatherFormat();
+  const { formatTemperature } = useWeatherFormat();
   const hourlyWeather = useHourlyWeather();
 
   // 24시간 시간별 데이터 (이제 실제로 24시간 제공됨)

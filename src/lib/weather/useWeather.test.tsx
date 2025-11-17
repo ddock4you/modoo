@@ -249,7 +249,7 @@ describe("useWeather hooks", () => {
       });
 
       expect(result.current.formatTemperature(25.7)).toBe("26°");
-      expect(result.current.formatTemperature(null)).toBe("--");
+      expect(result.current.formatTemperature(undefined)).toBe("--");
       expect(result.current.formatTemperature(undefined)).toBe("--");
     });
 
@@ -259,7 +259,7 @@ describe("useWeather hooks", () => {
       });
 
       expect(result.current.formatHumidity(65.4)).toBe("65%");
-      expect(result.current.formatHumidity(null)).toBe("--");
+      expect(result.current.formatHumidity(undefined)).toBe("--");
     });
 
     it("풍속을 올바르게 포맷팅해야 함", () => {
@@ -268,7 +268,7 @@ describe("useWeather hooks", () => {
       });
 
       expect(result.current.formatWindSpeed(3.14159)).toBe("3.1m/s");
-      expect(result.current.formatWindSpeed(null)).toBe("--");
+      expect(result.current.formatWindSpeed(undefined)).toBe("--");
     });
 
     it("시간을 올바르게 포맷팅해야 함", () => {

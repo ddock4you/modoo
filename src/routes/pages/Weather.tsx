@@ -45,8 +45,7 @@ function WeatherHeader() {
 
 function WeatherKPIs() {
   const { now, airQuality, nowLoading, airQualityLoading } = useWeather();
-  const { formatTemperature, formatHumidity, formatWindSpeed, formatAirQuality } =
-    useWeatherFormat();
+  const { formatHumidity, formatWindSpeed, formatAirQuality } = useWeatherFormat();
 
   if (nowLoading || airQualityLoading) {
     return (
@@ -78,7 +77,7 @@ function WeatherKPIs() {
       <div className="bg-purple-50 rounded-lg p-3">
         <div className="text-sm text-purple-600 font-medium mb-1">대기질</div>
         <div className="text-lg font-semibold text-purple-900">
-          {formatAirQuality(airQuality?.aqiKorea, airQuality?.pm25)}
+          {formatAirQuality(airQuality?.aqiKorea)}
         </div>
       </div>
     </div>
@@ -146,7 +145,6 @@ function CurrentWeatherCard() {
 function WeatherCharts() {
   const { hourly, daily } = useWeather();
   const { getIconName } = useWeatherIcon();
-  const { formatTemperature } = useWeatherFormat();
 
   return (
     <div className="px-4 space-y-6">
@@ -158,7 +156,7 @@ function WeatherCharts() {
         {(hourly || []).length > 0 && (
           <div className="mb-4">
             <HourlyChart
-              points={hourly}
+              points={hourly ?? []}
               height={120}
               showTemperature={true}
               showHumidity={false}
@@ -198,7 +196,12 @@ function WeatherCharts() {
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">7일 예보</h3>
 
-        <DailyList points={daily} maxItems={7} showPrecipitation={true} showHumidity={false} />
+        <DailyList
+          points={daily ?? []}
+          maxItems={7}
+          showPrecipitation={true}
+          showHumidity={false}
+        />
       </div>
 
       {/* 24시간 습도 추이 */}
@@ -208,7 +211,7 @@ function WeatherCharts() {
         {/* 습도 차트 */}
         {(hourly || []).length > 0 && (
           <div className="mb-4">
-            <HumidityChart points={hourly} height={120} showOptimalRange={true} />
+            <HumidityChart points={hourly ?? []} height={120} showOptimalRange={true} />
           </div>
         )}
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach, beforeAll } from "vitest";
-import { WeatherRepository, weatherRepository } from "./WeatherRepository";
+import { WeatherRepository } from "./WeatherRepository";
 import { weatherCache } from "./IndexedDbWeatherCache";
 import type {
   WeatherNow,
@@ -25,38 +25,40 @@ declare global {
 
 // 테스트용 모의 데이터
 const mockWeatherNow: WeatherNow = {
-  temperature: 25,
-  condition: "맑음",
-  humidity: 60,
-  windSpeed: 2.5,
+  tempC: 25,
+  humidityPct: 60,
+  windMs: 2.5,
+  weatherCode: { sky: 1, pty: 0 },
   updatedAt: Date.now(),
 };
 
 const mockWeatherHourly: WeatherHourlyPoint[] = [
   {
-    time: Date.now(),
-    temperature: 25,
-    condition: "맑음",
-    humidity: 60,
-    precipitation: 0,
-    windSpeed: 2.5,
+    time: new Date().toISOString(),
+    tempC: 25,
+    humidityPct: 60,
+    precipProbPct: 0,
+    sky: 1,
+    pty: 0,
   },
 ];
 
 const mockWeatherDaily: WeatherDailyPoint[] = [
   {
-    date: Date.now(),
-    maxTemp: 28,
-    minTemp: 22,
-    condition: "맑음",
-    precipitation: 0,
+    date: new Date().toISOString().split("T")[0],
+    minC: 22,
+    maxC: 28,
+    precipProbMaxPct: 0,
+    sky: 1,
+    pty: 0,
   },
 ];
 
 const mockAirQuality: AirQuality = {
-  grade: "보통",
   pm10: 35,
   pm25: 20,
+  aqiKorea: "보통",
+  stationName: "종로구",
   updatedAt: Date.now(),
 };
 
@@ -65,8 +67,11 @@ const mockLocation: WeatherLocation = {
   lat: 37.5665,
   lon: 126.978,
   name: "서울특별시 중구",
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
+  nx: 60,
+  ny: 127,
+  tmX: 198368.5,
+  tmY: 451130.0,
+  timezone: "Asia/Seoul",
 };
 
 describe("WeatherRepository", () => {
@@ -216,11 +221,18 @@ describe("WeatherRepository", () => {
 
   describe("일별 날씨 조회", () => {
     it("캐시된 데이터가 있으면 캐시를 반환해야 함", async () => {
-      const cacheSpy = vi.spyOn(weatherCache, "getDaily").mockResolvedValue({
-        data: mockWeatherDaily,
-        isStale: false,
-        expiresAt: Date.now() + 21600000, // 6시간 후
-      });
+      const cacheSpy = vi
+        .spyOn(weatherCache, "getDaily")
+        .mockResolvedValueOnce({
+          data: mockWeatherDaily,
+          isStale: false,
+          expiresAt: Date.now() + 21600000, // 6시간 후
+        })
+        .mockResolvedValueOnce({
+          data: [],
+          isStale: false,
+          expiresAt: Date.now() + 21600000, // 6시간 후
+        });
 
       const result = await repository.getDaily("grid_60_127");
       expect(result).toEqual(mockWeatherDaily);
