@@ -77,6 +77,49 @@ export default defineConfig({
               },
             },
           },
+          {
+            urlPattern: /^https:\/\/apis\.data\.go\.kr\/.*/i,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "kma-weather-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 30, // 30분
+              },
+              plugins: [
+                {
+                  cacheKeyWillBeUsed: async ({ request }) => {
+                    // API 키는 캐시 키에서 제외 (보안)
+                    const url = new URL(request.url);
+                    url.searchParams.delete("serviceKey");
+                    return url.toString();
+                  },
+                },
+              ],
+            },
+          },
+          {
+            urlPattern: /^https:\/\/api\.vworld\.kr\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "vworld-geocoding-cache",
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30일
+              },
+              plugins: [
+                {
+                  cacheKeyWillBeUsed: async ({ request }) => {
+                    // API 키는 캐시 키에서 제외 (보안)
+                    const url = new URL(request.url);
+                    url.searchParams.delete("key");
+                    url.searchParams.delete("apiKey");
+                    return url.toString();
+                  },
+                },
+              ],
+            },
+          },
         ],
       },
       devOptions: {
