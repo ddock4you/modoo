@@ -1,14 +1,9 @@
-import { Suspense } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, Wifi, WifiOff, AlertCircle, RefreshCw } from "lucide-react";
-import {
-  useWeather,
-  useWeatherLocation,
-  useWeatherFormat,
-  useWeatherIcon,
-} from "../../lib/weather/useWeather";
+import { useWeather, useWeatherFormat, useWeatherIcon } from "../../lib/weather/useWeather";
 import { HourlyChart } from "../../components/weather/HourlyChart";
 import { HumidityChart } from "../../components/weather/HumidityChart";
+import { DailyList } from "../../components/weather/DailyList";
 
 function WeatherHeader() {
   const { location, isOnline } = useWeather();
@@ -203,67 +198,7 @@ function WeatherCharts() {
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">7일 예보</h3>
 
-        <div className="space-y-3">
-          {(daily || []).slice(0, 7).map((day, index) => {
-            const date = new Date(day.date);
-            const isToday = date.toDateString() === new Date().toDateString();
-            const dayName = isToday
-              ? "오늘"
-              : date.toLocaleDateString("ko-KR", { weekday: "short" });
-            const dateStr = date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
-
-            // 오전/오후 온도
-            // - 0~2일(단기예보): minC / maxC 는 각각 오전/오후 평균값
-            // - 3~7일(중기예보): minC / maxC 는 일별 최저/최고 기온
-            const morningTemp = Math.round(day.minC);
-            const afternoonTemp = Math.round(day.maxC);
-
-            const morningIcon = getIconName(day.pty, day.sky);
-            const afternoonIcon = getIconName(day.pty, day.sky);
-
-            return (
-              <div
-                key={index}
-                className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-              >
-                {/* 날짜와 요일 */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 min-w-[40px]">{dayName}</div>
-                  <div className="text-sm text-gray-600">{dateStr}</div>
-                </div>
-
-                {/* 강수량 */}
-                <div className="text-sm text-blue-600 min-w-[35px] text-center">
-                  {day.precipProbMaxPct ? `${day.precipProbMaxPct}%` : "0%"}
-                </div>
-
-                {/* 오전 온도 */}
-                <div className="flex items-center gap-1 min-w-[50px] justify-center">
-                  <span className="text-sm">
-                    {morningIcon === "sun" && "☀️"}
-                    {morningIcon === "cloud" && "☁️"}
-                    {morningIcon === "cloud-rain" && "🌧️"}
-                    {morningIcon === "cloud-snow" && "❄️"}
-                    {!morningIcon && "☀️"}
-                  </span>
-                  <span className="text-sm font-medium text-gray-700">{morningTemp}°</span>
-                </div>
-
-                {/* 오후 온도 */}
-                <div className="flex items-center gap-1 min-w-[50px] justify-center">
-                  <span className="text-sm">
-                    {afternoonIcon === "sun" && "☀️"}
-                    {afternoonIcon === "cloud" && "☁️"}
-                    {afternoonIcon === "cloud-rain" && "🌧️"}
-                    {afternoonIcon === "cloud-snow" && "❄️"}
-                    {!afternoonIcon && "☀️"}
-                  </span>
-                  <span className="text-sm font-medium text-gray-700">{afternoonTemp}°</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <DailyList points={daily} maxItems={7} showPrecipitation={true} showHumidity={false} />
       </div>
 
       {/* 24시간 습도 추이 */}
