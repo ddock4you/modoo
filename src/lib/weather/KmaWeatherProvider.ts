@@ -355,8 +355,14 @@ export class KmaWeatherProvider {
       throw new Error(`KMA MidTa API Error: ${data.response?.header?.resultMsg}`);
     }
 
-    const result = data.response?.body?.items?.item || ({} as any);
-    return result as unknown as MidTaItem;
+    const items = data.response?.body?.items?.item;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new Error("KMA MidTa API Error: empty items");
+    }
+
+    // 실제 API는 item 배열을 반환하므로 첫 번째 요소만 사용
+    return items[0] as unknown as MidTaItem;
   }
 
   /**
@@ -385,13 +391,20 @@ export class KmaWeatherProvider {
       throw new Error(`KMA MidLandFcst API Error: ${data.response?.header?.resultMsg}`);
     }
 
-    const result = data.response?.body?.items?.item || ({} as any);
-    return result as unknown as MidLandFcstItem;
+    const items = data.response?.body?.items?.item;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new Error("KMA MidLandFcst API Error: empty items");
+    }
+
+    // 실제 API는 item 배열을 반환하므로 첫 번째 요소만 사용
+    return items[0] as unknown as MidLandFcstItem;
   }
 
   /**
    * 격자 좌표를 중기예보 지역코드로 변환
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private convertGridToRegId(_nx: number, _ny: number): string {
     // 간단한 매핑 (실제로는 더 정교한 변환 필요)
     // 서울/경기: 11B10101, 11B10102, 11B10103, 11B10104
@@ -426,10 +439,10 @@ export class KmaWeatherProvider {
     landData: MidLandFcstItem[]
   ): WeatherDailyPoint[] {
     const result: WeatherDailyPoint[] = [];
-    // KST 기준 오늘 날짜 계산
-    const kstOffset = 9 * 60 * 60 * 1000;
     const now = new Date();
-    const kstNow = new Date(now.getTime() + kstOffset);
+    // KST(Asia/Seoul) 기준 오늘 날짜 계산
+    const kstOffsetMinutes = 9 * 60 + now.getTimezoneOffset();
+    const kstNow = new Date(now.getTime() + kstOffsetMinutes * 60 * 1000);
     const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
 
     // API 응답이 배열이므로 첫 번째 요소 사용
@@ -568,10 +581,10 @@ export class KmaWeatherProvider {
       groupedByDate[dateKey].push(item);
     }
 
-    // 한국 시간대 기준 오늘 날짜 계산
-    const kstOffset = 9 * 60 * 60 * 1000;
     const now = new Date();
-    const kstNow = new Date(now.getTime() + kstOffset);
+    // 한국 시간대(KST, Asia/Seoul) 기준 오늘 날짜 계산
+    const kstOffsetMinutes = 9 * 60 + now.getTimezoneOffset();
+    const kstNow = new Date(now.getTime() + kstOffsetMinutes * 60 * 1000);
     const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
     today.setHours(0, 0, 0, 0);
 
@@ -682,10 +695,10 @@ export class KmaWeatherProvider {
 
     const allMid = this.combineMidForecastData([tempData], [landData]);
 
-    // 한국 시간대 기준 오늘 날짜
-    const kstOffset = 9 * 60 * 60 * 1000;
     const now = new Date();
-    const kstNow = new Date(now.getTime() + kstOffset);
+    // 한국 시간대(KST, Asia/Seoul) 기준 오늘 날짜
+    const kstOffsetMinutes = 9 * 60 + now.getTimezoneOffset();
+    const kstNow = new Date(now.getTime() + kstOffsetMinutes * 60 * 1000);
     const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
     today.setHours(0, 0, 0, 0);
 

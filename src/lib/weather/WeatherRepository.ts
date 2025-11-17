@@ -142,7 +142,12 @@ export class WeatherRepository implements IWeatherRepository {
       case "daily": {
         // 3시간 단위로 정규화 (02, 05, 08, 11, 14, 17, 20, 23시)
         const hour = Math.floor(date.getHours() / 3) * 3;
-        return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour).getTime();
+        const normalized = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour);
+
+        // 캐시 스키마 변경(중기예보 온도 0 이슈 수정)을 위해
+        // daily 캐시의 baseTime을 기존 값에서 1ms 만큼 이동시켜
+        // 이전에 저장된 잘못된 daily 캐시를 자동으로 무효화한다.
+        return normalized.getTime() + 1;
       }
 
       case "airQuality":
@@ -325,10 +330,10 @@ export class WeatherRepository implements IWeatherRepository {
       if (daily) {
         const baseTime = this.normalizeBaseTime(Date.now(), "daily");
 
-        // KST 기준 오늘 날짜 계산 (KmaWeatherProvider와 동일하게)
-        const kstOffset = 9 * 60 * 60 * 1000;
         const now = new Date();
-        const kstNow = new Date(now.getTime() + kstOffset);
+        // KST(Asia/Seoul) 기준 오늘 날짜 계산 (KmaWeatherProvider와 동일한 방식)
+        const kstOffsetMinutes = 9 * 60 + now.getTimezoneOffset();
+        const kstNow = new Date(now.getTime() + kstOffsetMinutes * 60 * 1000);
         const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
         today.setHours(0, 0, 0, 0);
 
