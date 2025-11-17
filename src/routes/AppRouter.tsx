@@ -4,6 +4,7 @@ import { Dashboard } from "./pages/Dashboard";
 import { Plants } from "./pages/Plants";
 import { PlantDetail } from "./pages/PlantDetail";
 import { Settings } from "./pages/Settings";
+import { Weather } from "./pages/Weather";
 import { DebugDb } from "./pages/DebugDb";
 import { WeatherProvider } from "../lib/weather/WeatherProvider";
 
@@ -37,6 +38,14 @@ const router = createBrowserRouter([
     element: (
       <MobileGuard>
         <Settings />
+      </MobileGuard>
+    ),
+  },
+  {
+    path: "/weather",
+    element: (
+      <MobileGuard>
+        <Weather />
       </MobileGuard>
     ),
   },

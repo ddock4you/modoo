@@ -37,7 +37,7 @@ export function HourlyChart({
   // 24시간 데이터만 사용
   const chartData = React.useMemo(
     () =>
-      points.slice(0, 24).map((point, index) => {
+      (points || []).slice(0, 24).map((point, index) => {
         const time = new Date(point.time);
         const hour = time.getHours();
 

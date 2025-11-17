@@ -282,21 +282,84 @@ export class WeatherRepository implements IWeatherRepository {
 
     try {
       const normalizedBaseTime = this.normalizeBaseTime(Date.now(), "daily");
-      const cached = await weatherCache.getDaily(locationId, normalizedBaseTime);
-      if (cached && !cached.isStale) {
-        return cached.data;
+
+      // 단기예보와 중기예보 데이터를 모두 조회
+      const shortTermCached = await weatherCache.getDaily(locationId, normalizedBaseTime, "short");
+      const midTermCached = await weatherCache.getDaily(locationId, normalizedBaseTime, "mid");
+
+      // 둘 다 유효한 캐시가 있으면 통합
+      if (shortTermCached && !shortTermCached.isStale && midTermCached && !midTermCached.isStale) {
+        return [...shortTermCached.data, ...midTermCached.data].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      }
+
+      // 둘 중 하나라도 유효하면 그것을 사용 (부분 캐시)
+      if (shortTermCached && !shortTermCached.isStale) {
+        const midTermData = midTermCached?.data || [];
+        return [...shortTermCached.data, ...midTermData].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+      }
+
+      if (midTermCached && !midTermCached.isStale) {
+        const shortTermData = shortTermCached?.data || [];
+        return [...shortTermData, ...midTermCached.data].sort(
+          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
       }
 
       const location = await weatherCache.getLocation(locationId);
       if (!location) {
         console.warn(`Location not found for locationId: ${locationId}`);
-        return cached?.data || null;
+        // 부분 캐시가 있으면 그것을 반환
+        const shortTermData = shortTermCached?.data || [];
+        const midTermData = midTermCached?.data || [];
+        const combinedData = [...shortTermData, ...midTermData];
+        return combinedData.length > 0
+          ? combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          : null;
       }
 
       const daily = await this.kmaProvider.getDailyForecast7d(location);
       if (daily) {
         const baseTime = this.normalizeBaseTime(Date.now(), "daily");
-        await weatherCache.setDaily(locationId, baseTime, daily);
+
+        // KST 기준 오늘 날짜 계산 (KmaWeatherProvider와 동일하게)
+        const kstOffset = 9 * 60 * 60 * 1000;
+        const now = new Date();
+        const kstNow = new Date(now.getTime() + kstOffset);
+        const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+        today.setHours(0, 0, 0, 0);
+
+        // 데이터를 날짜별로 그룹화하여 타입별로 저장
+        const shortTermData: WeatherDailyPoint[] = [];
+        const midTermData: WeatherDailyPoint[] = [];
+
+        for (const day of daily) {
+          const dayDate = new Date(day.date);
+          dayDate.setHours(0, 0, 0, 0);
+          const daysDiff = Math.floor(
+            (dayDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          // 0~3일: 단기예보, 4일 이후: 중기예보
+          if (daysDiff >= 0 && daysDiff <= 3) {
+            shortTermData.push(day);
+          } else if (daysDiff >= 4 && daysDiff <= 10) {
+            midTermData.push(day);
+          }
+        }
+
+        // 단기예보 데이터 저장
+        if (shortTermData.length > 0) {
+          await weatherCache.setDaily(locationId, baseTime, shortTermData, "short");
+        }
+
+        // 중기예보 데이터 저장
+        if (midTermData.length > 0) {
+          await weatherCache.setDaily(locationId, baseTime, midTermData, "mid");
+        }
       }
 
       return daily;
@@ -304,8 +367,22 @@ export class WeatherRepository implements IWeatherRepository {
       console.error("Failed to get daily weather:", error);
       try {
         const normalizedBaseTime = this.normalizeBaseTime(Date.now(), "daily");
-        const cached = await weatherCache.getDaily(locationId, normalizedBaseTime);
-        return cached?.data || null;
+
+        // 폴백 시에도 단기예보와 중기예보 데이터를 모두 조회
+        const shortTermCached = await weatherCache.getDaily(
+          locationId,
+          normalizedBaseTime,
+          "short"
+        );
+        const midTermCached = await weatherCache.getDaily(locationId, normalizedBaseTime, "mid");
+
+        const shortTermData = shortTermCached?.data || [];
+        const midTermData = midTermCached?.data || [];
+        const combinedData = [...shortTermData, ...midTermData];
+
+        return combinedData.length > 0
+          ? combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          : null;
       } catch (cacheError) {
         console.error("Failed to get cached daily weather:", cacheError);
         return null;

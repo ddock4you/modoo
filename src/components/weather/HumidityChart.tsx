@@ -22,8 +22,8 @@ export interface HumidityChartProps {
   points: WeatherHourlyPoint[];
   height?: number;
   showOptimalRange?: boolean;
-  optimalMin?: number;  // 권장 최소 습도 (기본: 40%)
-  optimalMax?: number;  // 권장 최대 습도 (기본: 60%)
+  optimalMin?: number; // 권장 최소 습도 (기본: 40%)
+  optimalMax?: number; // 권장 최대 습도 (기본: 60%)
 }
 
 export function HumidityChart({
@@ -34,32 +34,39 @@ export function HumidityChart({
   optimalMax = 60,
 }: HumidityChartProps) {
   // 24시간 습도 데이터 가공
-  const chartData = React.useMemo(() =>
-    points.slice(0, 24).map((point, index) => {
-      const time = new Date(point.time);
-      const hour = time.getHours();
+  const chartData = React.useMemo(
+    () =>
+      (points || []).slice(0, 24).map((point, index) => {
+        const time = new Date(point.time);
+        const hour = time.getHours();
 
-      return {
-        label: index === 0 ? "지금" : `${hour}시`,
-        humidity: Math.round(point.humidityPct ?? 50),
-        time: point.time,
-        isOptimal: point.humidityPct ? (point.humidityPct >= optimalMin && point.humidityPct <= optimalMax) : false,
-      };
-    }), [points, optimalMin, optimalMax]
+        return {
+          label: index === 0 ? "지금" : `${hour}시`,
+          humidity: Math.round(point.humidityPct ?? 50),
+          time: point.time,
+          isOptimal: point.humidityPct
+            ? point.humidityPct >= optimalMin && point.humidityPct <= optimalMax
+            : false,
+        };
+      }),
+    [points, optimalMin, optimalMax]
   );
 
   // 툴팁 포맷터
-  const tooltipFormatter = React.useCallback((value: any, name: string) => {
-    if (name === "humidity") {
-      const humidity = value as number;
-      let status = "적정";
-      if (humidity < optimalMin) status = "건조";
-      else if (humidity > optimalMax) status = "습함";
+  const tooltipFormatter = React.useCallback(
+    (value: any, name: string) => {
+      if (name === "humidity") {
+        const humidity = value as number;
+        let status = "적정";
+        if (humidity < optimalMin) status = "건조";
+        else if (humidity > optimalMax) status = "습함";
 
-      return [`${value}% (${status})`, "습도"];
-    }
-    return [value, name];
-  }, [optimalMin, optimalMax]);
+        return [`${value}% (${status})`, "습도"];
+      }
+      return [value, name];
+    },
+    [optimalMin, optimalMax]
+  );
 
   // X축 틱 포맷터 (2시간 간격으로 표시)
   const xAxisTickFormatter = React.useCallback((value: any, index: number) => {
@@ -67,11 +74,14 @@ export function HumidityChart({
   }, []);
 
   // 습도에 따른 색상 결정
-  const getHumidityColor = React.useCallback((humidity: number) => {
-    if (humidity < optimalMin) return "#f59e0b"; // 낮음: 주황
-    if (humidity > optimalMax) return "#3b82f6"; // 높음: 파랑
-    return "#10b981"; // 적정: 초록
-  }, [optimalMin, optimalMax]);
+  const getHumidityColor = React.useCallback(
+    (humidity: number) => {
+      if (humidity < optimalMin) return "#f59e0b"; // 낮음: 주황
+      if (humidity > optimalMax) return "#3b82f6"; // 높음: 파랑
+      return "#10b981"; // 적정: 초록
+    },
+    [optimalMin, optimalMax]
+  );
 
   return (
     <div className="w-full">
@@ -157,30 +167,12 @@ export function HumidityChart({
             dot={(props) => {
               const { cx, cy, payload } = props;
               const color = getHumidityColor(payload.humidity);
-              return (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={4}
-                  fill={color}
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
-              );
+              return <circle cx={cx} cy={cy} r={4} fill={color} stroke="#ffffff" strokeWidth={2} />;
             }}
             activeDot={(props) => {
               const { cx, cy, payload } = props;
               const color = getHumidityColor(payload.humidity);
-              return (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={6}
-                  fill={color}
-                  stroke="#ffffff"
-                  strokeWidth={3}
-                />
-              );
+              return <circle cx={cx} cy={cy} r={6} fill={color} stroke="#ffffff" strokeWidth={3} />;
             }}
             name="humidity"
           />

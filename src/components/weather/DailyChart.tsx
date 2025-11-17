@@ -32,26 +32,28 @@ export function DailyChart({
   height = 200,
 }: DailyChartProps) {
   // 7일 데이터 가공
-  const chartData = React.useMemo(() =>
-    points.slice(0, 7).map((point) => {
-      // 요일 레이블 생성
-      const date = new Date(point.date);
-      const dayName = date.toLocaleDateString("ko-KR", { weekday: "short" });
+  const chartData = React.useMemo(
+    () =>
+      (points || []).slice(0, 7).map((point) => {
+        // 요일 레이블 생성
+        const date = new Date(point.date);
+        const dayName = date.toLocaleDateString("ko-KR", { weekday: "short" });
 
-      // 평균 습도 계산 (실제로는 일별 시간별 데이터에서 평균을 구해야 하지만,
-      // 현재 데이터 구조상에서는 기본값 사용 또는 별도 계산 필요)
-      // 여기서는 임시로 50%로 설정 (실제 구현에서는 시간별 데이터에서 계산)
-      const avgHumidity = 50; // TODO: 실제 평균 습도 계산 로직 구현 필요
+        // 평균 습도 계산 (실제로는 일별 시간별 데이터에서 평균을 구해야 하지만,
+        // 현재 데이터 구조상에서는 기본값 사용 또는 별도 계산 필요)
+        // 여기서는 임시로 50%로 설정 (실제 구현에서는 시간별 데이터에서 계산)
+        const avgHumidity = 50; // TODO: 실제 평균 습도 계산 로직 구현 필요
 
-      return {
-        label: dayName,
-        minTemp: Math.round(point.minC),
-        maxTemp: Math.round(point.maxC),
-        precip: Math.round(point.precipProbMaxPct ?? 0),
-        humidity: avgHumidity,
-        date: point.date,
-      };
-    }), [points]
+        return {
+          label: dayName,
+          minTemp: Math.round(point.minC),
+          maxTemp: Math.round(point.maxC),
+          precip: Math.round(point.precipProbMaxPct ?? 0),
+          humidity: avgHumidity,
+          date: point.date,
+        };
+      }),
+    [points]
   );
 
   // 툴팁 포맷터
@@ -78,12 +80,7 @@ export function DailyChart({
           <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
 
           {/* X축: 요일 레이블 */}
-          <XAxis
-            dataKey="label"
-            tick={{ fontSize: 12 }}
-            axisLine={false}
-            tickLine={false}
-          />
+          <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
 
           {/* Y축들 */}
           {showTemperature && (
@@ -98,12 +95,7 @@ export function DailyChart({
           )}
 
           {showPrecipitation && (
-            <YAxis
-              yAxisId="precip"
-              orientation="right"
-              hide
-              domain={[0, 100]}
-            />
+            <YAxis yAxisId="precip" orientation="right" hide domain={[0, 100]} />
           )}
 
           {/* 툴팁 */}

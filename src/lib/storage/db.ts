@@ -197,9 +197,10 @@ export interface ModooDB extends DBSchema {
   };
   // 날씨 일별 데이터 캐시 (6시간 TTL)
   weather_daily: {
-    key: [string, number]; // [locationId, baseTime]
+    key: [string, string, number]; // [locationId, type, baseTime]
     value: {
       locationId: string;
+      type: "short" | "mid"; // 데이터 타입 (단기/중기)
       baseTime: number; // 발표시간
       data: Array<{
         date: string; // yyyy-mm-dd
@@ -214,6 +215,7 @@ export interface ModooDB extends DBSchema {
     indexes: {
       byExpiresAt: number; // 만료시간으로 인덱스
       byLocationId: string; // 위치별 조회용
+      byType: string; // 타입별 조회용
     };
   };
   // 대기질 데이터 캐시 (60분 TTL)

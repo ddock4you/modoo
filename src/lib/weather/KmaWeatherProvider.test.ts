@@ -654,11 +654,12 @@ describe("KmaWeatherProvider", () => {
           });
         } else {
           return Promise.resolve({
-            json: () => Promise.resolve({
-              response: {
-                header: { resultCode: "99", resultMsg: "error" },
-              },
-            }),
+            json: () =>
+              Promise.resolve({
+                response: {
+                  header: { resultCode: "99", resultMsg: "error" },
+                },
+              }),
           });
         }
       });
@@ -671,120 +672,116 @@ describe("KmaWeatherProvider", () => {
   });
 
   describe("getDailyForecast7d", () => {
-    it("여러 VilageFcst 호출을 통해 7일 데이터를 반환해야 함", async () => {
-      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
-      const mockNow = new Date("2024-11-13T15:00:00");
-      vi.useFakeTimers();
-      vi.setSystemTime(mockNow);
+    it("중기예보 API를 통해 7일 데이터를 반환해야 함", async () => {
+      // 중기예보 API mock 데이터
+      const mockMidTaResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: {
+                taMin3: "18.0",
+                taMax3: "28.0", // 3일 후
+                taMin4: "19.0",
+                taMax4: "27.0", // 4일 후
+                taMin5: "17.0",
+                taMax5: "26.0", // 5일 후
+                taMin6: "16.0",
+                taMax6: "25.0", // 6일 후
+                taMin7: "15.0",
+                taMax7: "24.0", // 7일 후
+              },
+            },
+          },
+        },
+      };
 
-      let callCount = 0;
-      const mockDailyResponses = [
-        // 첫 번째 호출 (오늘)
-        {
-          response: {
-            header: { resultCode: "00", resultMsg: "success" },
-            body: {
-              items: {
-                item: [
-                  {
-                    category: "TMN",
-                    fcstDate: "20241113",
-                    fcstValue: "15.0",
-                  },
-                  {
-                    category: "TMX",
-                    fcstDate: "20241113",
-                    fcstValue: "25.0",
-                  },
-                  {
-                    category: "POP",
-                    fcstDate: "20241113",
-                    fcstValue: "30",
-                  },
-                ],
+      const mockMidLandResponse = {
+        response: {
+          header: { resultCode: "00", resultMsg: "success" },
+          body: {
+            items: {
+              item: {
+                wf3Am: "맑음",
+                wf3Pm: "구름많음",
+                wf4Am: "흐림",
+                wf4Pm: "맑음",
+                wf5Am: "비",
+                wf5Pm: "맑음",
+                wf6Am: "맑음",
+                wf6Pm: "맑음",
+                wf7Am: "구름많음",
+                wf7Pm: "맑음",
+                rnSt3Am: "10",
+                rnSt3Pm: "20",
+                rnSt4Am: "30",
+                rnSt4Pm: "10",
+                rnSt5Am: "60",
+                rnSt5Pm: "20",
+                rnSt6Am: "0",
+                rnSt6Pm: "0",
+                rnSt7Am: "20",
+                rnSt7Pm: "10",
               },
             },
           },
         },
-        // 두 번째 호출 (3일 후)
-        {
-          response: {
-            header: { resultCode: "00", resultMsg: "success" },
-            body: {
-              items: {
-                item: [
-                  {
-                    category: "TMN",
-                    fcstDate: "20241116",
-                    fcstValue: "16.0",
-                  },
-                  {
-                    category: "TMX",
-                    fcstDate: "20241116",
-                    fcstValue: "26.0",
-                  },
-                ],
-              },
-            },
-          },
-        },
-        // 세 번째 호출 (6일 후)
-        {
-          response: {
-            header: { resultCode: "00", resultMsg: "success" },
-            body: {
-              items: {
-                item: [
-                  {
-                    category: "TMN",
-                    fcstDate: "20241119",
-                    fcstValue: "17.0",
-                  },
-                  {
-                    category: "TMX",
-                    fcstDate: "20241119",
-                    fcstValue: "27.0",
-                  },
-                ],
-              },
-            },
-          },
-        },
-      ];
+      };
 
-      global.fetch = vi.fn().mockImplementation(() => {
-        const response = mockDailyResponses[callCount % mockDailyResponses.length];
-        callCount++;
-        return Promise.resolve({
-          json: () => Promise.resolve(response),
-        });
+      let apiCallCount = 0;
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("getMidTa")) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockMidTaResponse),
+          });
+        } else if (url.includes("getMidLandFcst")) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockMidLandResponse),
+          });
+        }
+        return Promise.reject(new Error("Unknown API"));
       });
 
       const result = await provider.getDailyForecast7d(mockLocation);
 
-      expect(result.length).toBeGreaterThanOrEqual(1);
+      // 단기예보 없이 중기예보만 있는 경우, 4~7일(4일치)만 포함
+      expect(result.length).toBe(4);
       expect(result[0]).toMatchObject({
-        minC: 15.0,
-        maxC: 25.0,
-        precipProbMaxPct: 30,
+        minC: 18.0,
+        maxC: 28.0,
+        precipProbMaxPct: 20, // max(10, 20)
       });
-      // 여러 번 호출되는지 확인
-      expect(global.fetch).toHaveBeenCalledTimes(3); // 0, 3, 6일로 3번 호출
-
-      // 타이머 리셋
-      vi.useRealTimers();
+      expect(result[1]).toMatchObject({
+        minC: 19.0,
+        maxC: 27.0,
+        precipProbMaxPct: 30, // max(30, 10)
+      });
     });
 
-    it("일부 API 호출 실패 시 가능한 데이터만 반환해야 함", async () => {
-      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
+    it("중기예보 API 실패 시 단기예보로 폴백해야 함", async () => {
+      // 현재 시간을 고정해서 예측 가능한 테스트
       const mockNow = new Date("2024-11-13T15:00:00");
       vi.useFakeTimers();
       vi.setSystemTime(mockNow);
 
+      // 중기예보 API 실패 mock, 단기예보 성공 mock
       let callCount = 0;
-      global.fetch = vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.includes("getMidTa") || url.includes("getMidLandFcst")) {
+          // 중기예보 실패
+          return Promise.resolve({
+            json: () =>
+              Promise.resolve({
+                response: {
+                  header: { resultCode: "99", resultMsg: "error" },
+                  body: { items: { item: {} } },
+                },
+              }),
+          });
+        } else if (url.includes("getVilageFcst")) {
+          // 단기예보 성공 - 오늘 날짜 사용
+          callCount++;
+          const todayStr = "20241113"; // 오늘 날짜
           return Promise.resolve({
             json: () =>
               Promise.resolve({
@@ -795,13 +792,18 @@ describe("KmaWeatherProvider", () => {
                       item: [
                         {
                           category: "TMN",
-                          fcstDate: "20241113",
+                          fcstDate: todayStr,
                           fcstValue: "15.0",
                         },
                         {
                           category: "TMX",
-                          fcstDate: "20241113",
+                          fcstDate: todayStr,
                           fcstValue: "25.0",
+                        },
+                        {
+                          category: "POP",
+                          fcstDate: todayStr,
+                          fcstValue: "30",
                         },
                       ],
                     },
@@ -809,24 +811,18 @@ describe("KmaWeatherProvider", () => {
                 },
               }),
           });
-        } else {
-          // 나머지 호출들은 실패
-          return Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                response: {
-                  header: { resultCode: "99", resultMsg: "error" },
-                },
-              }),
-          });
         }
+        return Promise.reject(new Error("Unknown API"));
       });
 
       const result = await provider.getDailyForecast7d(mockLocation);
 
       expect(result.length).toBeGreaterThanOrEqual(1);
-      expect(result[0].minC).toBe(15.0);
-      expect(result[0].maxC).toBe(25.0);
+      expect(result[0]).toMatchObject({
+        minC: 15.0,
+        maxC: 25.0,
+        precipProbMaxPct: 30,
+      });
 
       // 타이머 리셋
       vi.useRealTimers();

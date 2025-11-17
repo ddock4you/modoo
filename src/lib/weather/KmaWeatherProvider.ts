@@ -51,6 +51,57 @@ interface UltraSrtFcstItem {
   ny: number;
 }
 
+// 중기예보 아이템 타입들
+interface MidTaItem {
+  regId: string; // 지역코드
+  taMin3: string; // 3일 후 최저기온
+  taMax3: string; // 3일 후 최고기온
+  taMin4: string; // 4일 후 최저기온
+  taMax4: string; // 4일 후 최고기온
+  taMin5: string; // 5일 후 최저기온
+  taMax5: string; // 5일 후 최고기온
+  taMin6: string; // 6일 후 최저기온
+  taMax6: string; // 6일 후 최고기온
+  taMin7: string; // 7일 후 최저기온
+  taMax7: string; // 7일 후 최고기온
+  taMin8: string; // 8일 후 최저기온
+  taMax8: string; // 8일 후 최고기온
+  taMin9: string; // 9일 후 최저기온
+  taMax9: string; // 9일 후 최고기온
+  taMin10: string; // 10일 후 최저기온
+  taMax10: string; // 10일 후 최고기온
+}
+
+interface MidLandFcstItem {
+  regId: string; // 지역코드
+  wf3Am: string; // 3일 후 오전 날씨
+  wf3Pm: string; // 3일 후 오후 날씨
+  wf4Am: string; // 4일 후 오전 날씨
+  wf4Pm: string; // 4일 후 오후 날씨
+  wf5Am: string; // 5일 후 오전 날씨
+  wf5Pm: string; // 5일 후 오후 날씨
+  wf6Am: string; // 6일 후 오전 날씨
+  wf6Pm: string; // 6일 후 오후 날씨
+  wf7Am: string; // 7일 후 오전 날씨
+  wf7Pm: string; // 7일 후 오후 날씨
+  wf8: string; // 8일 후 날씨
+  wf9: string; // 9일 후 날씨
+  wf10: string; // 10일 후 날씨
+  rnSt3Am: string; // 3일 후 오전 강수확률
+  rnSt3Pm: string; // 3일 후 오후 강수확률
+  rnSt4Am: string; // 4일 후 오전 강수확률
+  rnSt4Pm: string; // 4일 후 오후 강수확률
+  rnSt5Am: string; // 5일 후 오전 강수확률
+  rnSt5Pm: string; // 5일 후 오후 강수확률
+  rnSt6Am: string; // 6일 후 오전 강수확률
+  rnSt6Pm: string; // 6일 후 오후 강수확률
+  rnSt7Am: string; // 7일 후 오전 강수확률
+  rnSt7Pm: string; // 7일 후 오후 강수확률
+  rnSt8: string; // 8일 후 강수확률
+  rnSt9: string; // 9일 후 강수확률
+  rnSt10: string; // 10일 후 강수확률
+}
+
 // 단기예보 아이템 타입
 interface VilageFcstItem {
   baseDate: string;
@@ -120,7 +171,8 @@ export class KmaWeatherProvider {
   async getHourlyForecast(location: WeatherLocation): Promise<WeatherHourlyPoint[]> {
     const now = new Date();
     const baseDate = this.formatDate(now);
-    const baseTime = this.getBaseTimeForForecast(now);
+    // UltraSrtFcst는 초단기실황 발표시간과 동일하게 매시간 30분에 발표됨
+    const baseTime = this.getBaseTimeForCurrent(now);
 
     // 초단기예보 (0-6시간)
     const ultraParams = new URLSearchParams({
@@ -155,7 +207,8 @@ export class KmaWeatherProvider {
   async getHourlyForecast24h(location: WeatherLocation): Promise<WeatherHourlyPoint[]> {
     const now = new Date();
     const baseDate = this.formatDate(now);
-    const baseTime = this.getBaseTimeForForecast(now);
+    // UltraSrtFcst는 초단기실황 발표시간과 동일하게 매시간 30분에 발표됨
+    const baseTime = this.getBaseTimeForCurrent(now);
 
     // 1. UltraSrtFcst (0-6시간) 호출
     const ultraParams = new URLSearchParams({
@@ -218,7 +271,7 @@ export class KmaWeatherProvider {
     const params = new URLSearchParams({
       serviceKey: this.apiKey,
       pageNo: "1",
-      numOfRows: "200", // 3일 * 8개 항목 * 8개 카테고리 정도
+      numOfRows: "1000", // 3일 * 8개 항목 * 8개 카테고리 정도
       dataType: "JSON",
       base_date: baseDate,
       base_time: baseTime,
@@ -241,9 +294,215 @@ export class KmaWeatherProvider {
   }
 
   /**
-   * 7일 일별 예보 (여러 VilageFcst 호출 조합)
+   * 7일 일별 예보 (단기예보 0~3일 + 중기예보 4~7일)
+   *
+   * - 0~3일: KMA 단기예보(VilageFcst)의 3시간 간격 TMP를 이용해
+   *   오전/오후(하루를 반으로 나눈 시간대)의 평균 기온을 계산하고,
+   *   이를 WeatherDailyPoint.minC / maxC 에 각각 매핑한다.
+   * - 4~7일: KMA 중기예보(MidTa + MidLandFcst)를 그대로 사용한다.
+   * - 추정 데이터(사용자 정의 보정값)는 사용하지 않는다.
    */
   async getDailyForecast7d(location: WeatherLocation): Promise<WeatherDailyPoint[]> {
+    const results: WeatherDailyPoint[] = [];
+
+    // 1. 단기예보(0~3일)
+    try {
+      const shortTerm = await this.getShortTermDaily0to3(location);
+      results.push(...shortTerm);
+    } catch (error) {
+      console.warn("Failed to fetch short-term daily forecast (0-3d):", error);
+    }
+
+    // 2. 중기예보(4~7일)
+    try {
+      const midTerm = await this.getMidTermDaily4to7(location);
+      results.push(...midTerm);
+    } catch (error) {
+      console.warn("Failed to fetch mid-term daily forecast (4-7d):", error);
+    }
+
+    // 3. 날짜 기준 중복 제거 + 정렬
+    const uniqueResults = results
+      .filter((day, index, self) => index === self.findIndex((d) => d.date === day.date))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return uniqueResults.slice(0, 7); // 최대 7일까지만 사용
+  }
+
+  /**
+   * 중기기온 조회
+   */
+  private async getMidTemperature(regId: string): Promise<MidTaItem> {
+    const now = new Date();
+    const baseDate = this.formatDate(now);
+    const baseTime = this.getBaseTimeForMidForecast(now);
+
+    const params = new URLSearchParams({
+      serviceKey: this.apiKey,
+      pageNo: "1",
+      numOfRows: "1",
+      dataType: "JSON",
+      regId: regId,
+      tmFc: baseDate + baseTime, // 발표시각
+    });
+
+    const url = `${this.baseUrl}/MidFcstInfoService/getMidTa?${params}`;
+
+    const response = await fetch(url);
+    const data: KmaApiResponse<MidTaItem> = await response.json();
+
+    if (data.response?.header?.resultCode !== "00") {
+      throw new Error(`KMA MidTa API Error: ${data.response?.header?.resultMsg}`);
+    }
+
+    const result = data.response?.body?.items?.item || ({} as MidTaItem);
+    return result;
+  }
+
+  /**
+   * 중기육상예보 조회
+   */
+  private async getMidLandForecast(regId: string): Promise<MidLandFcstItem> {
+    const now = new Date();
+    const baseDate = this.formatDate(now);
+    const baseTime = this.getBaseTimeForMidForecast(now);
+
+    const params = new URLSearchParams({
+      serviceKey: this.apiKey,
+      pageNo: "1",
+      numOfRows: "1",
+      dataType: "JSON",
+      regId: regId,
+      tmFc: baseDate + baseTime, // 발표시각
+    });
+
+    const url = `${this.baseUrl}/MidFcstInfoService/getMidLandFcst?${params}`;
+
+    const response = await fetch(url);
+    const data: KmaApiResponse<MidLandFcstItem> = await response.json();
+
+    if (data.response?.header?.resultCode !== "00") {
+      throw new Error(`KMA MidLandFcst API Error: ${data.response?.header?.resultMsg}`);
+    }
+
+    const result = data.response?.body?.items?.item || ({} as MidLandFcstItem);
+    return result;
+  }
+
+  /**
+   * 격자 좌표를 중기예보 지역코드로 변환
+   */
+  private convertGridToRegId(nx: number, ny: number): string {
+    // 간단한 매핑 (실제로는 더 정교한 변환 필요)
+    // 서울/경기: 11B10101, 11B10102, 11B10103, 11B10104
+    // 부산: 11H20101, 11H20102, 11H20103, 11H20104
+    // 등등...
+
+    // 임시로 서울 지역으로 매핑
+    return "11B10101"; // 서울
+  }
+
+  /**
+   * 중기예보 발표시간 결정 (6시, 18시 발표)
+   */
+  private getBaseTimeForMidForecast(now: Date): string {
+    const hour = now.getHours();
+
+    // 6시 발표: 06시 ~ 17시 59분
+    if (hour >= 6 && hour < 18) {
+      return "0600";
+    }
+    // 18시 발표: 18시 ~ 05시 59분
+    else {
+      return "1800";
+    }
+  }
+
+  /**
+   * 중기예보 데이터 조합
+   */
+  private combineMidForecastData(
+    tempData: MidTaItem[],
+    landData: MidLandFcstItem[]
+  ): WeatherDailyPoint[] {
+    const result: WeatherDailyPoint[] = [];
+    // KST 기준 오늘 날짜 계산
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+
+    // API 응답이 배열이므로 첫 번째 요소 사용
+    const tempItem = tempData[0];
+    const landItem = landData[0];
+
+    if (!tempItem || !landItem) {
+      console.warn("No valid mid-term forecast data");
+      return result;
+    }
+
+    // 중기예보 발표 시간에 따라 시작 날짜 결정
+    // 6시 발표: 4일 ~ 10일, 18시 발표: 5일 ~ 10일
+    const currentHour = now.getHours();
+    const startDay = currentHour >= 6 && currentHour < 18 ? 4 : 5;
+
+    // API에서 제공하는 범위까지만 처리 (최대 10일)
+    for (let day = startDay; day <= Math.min(7, 10); day++) {
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + day);
+
+      const tempMinKey = `taMin${day}` as keyof MidTaItem;
+      const tempMaxKey = `taMax${day}` as keyof MidTaItem;
+      const wfAmKey = `wf${day}Am` as keyof MidLandFcstItem;
+      const wfPmKey = `wf${day}Pm` as keyof MidLandFcstItem;
+      const rnStAmKey = `rnSt${day}Am` as keyof MidLandFcstItem;
+      const rnStPmKey = `rnSt${day}Pm` as keyof MidLandFcstItem;
+
+      const rawMinTemp = tempItem[tempMinKey];
+      const rawMaxTemp = tempItem[tempMaxKey];
+
+      const minTemp = rawMinTemp ? parseFloat(rawMinTemp as string) : 0;
+      const maxTemp = rawMaxTemp ? parseFloat(rawMaxTemp as string) : 0;
+
+      // 강수확률은 오전/오후 중 높은 값 사용
+      const precipProbAm = landItem[rnStAmKey] ? parseInt(landItem[rnStAmKey] as string) : 0;
+      const precipProbPm = landItem[rnStPmKey] ? parseInt(landItem[rnStPmKey] as string) : 0;
+      const maxPrecipProb = Math.max(precipProbAm, precipProbPm);
+
+      // 날씨 상태는 간단히 맑음/흐림/비로 분류
+      let sky: 1 | 3 | 4 | undefined;
+      let pty: 0 | 1 | 2 | 3 | 5 | 6 | 7 | undefined;
+
+      const weatherDesc = (landItem[wfAmKey] as string) || (landItem[wfPmKey] as string) || "";
+      if (weatherDesc.includes("맑음")) {
+        sky = 1; // 맑음
+        pty = 0; // 없음
+      } else if (weatherDesc.includes("구름많음") || weatherDesc.includes("흐림")) {
+        sky = 4; // 흐림
+        pty = 0; // 없음
+      } else if (weatherDesc.includes("비") || weatherDesc.includes("눈")) {
+        sky = 4; // 흐림
+        pty = weatherDesc.includes("비") ? 1 : 3; // 비 또는 눈
+      }
+
+      result.push({
+        date: targetDate.toISOString().split("T")[0],
+        minC: minTemp,
+        maxC: maxTemp,
+        precipProbMaxPct: maxPrecipProb > 0 ? maxPrecipProb : undefined,
+        sky,
+        pty,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * VilageFcst(단기예보)에서 7일치 원본 아이템을 조회
+   * - getDailyForecast7dFallback 및 getShortTermDaily0to2 에서 재사용
+   */
+  private async fetchVilageFcstItemsFor7d(location: WeatherLocation): Promise<VilageFcstItem[]> {
     const allItems: VilageFcstItem[] = [];
     const now = new Date();
 
@@ -258,7 +517,7 @@ export class KmaWeatherProvider {
       const params = new URLSearchParams({
         serviceKey: this.apiKey,
         pageNo: "1",
-        numOfRows: "200",
+        numOfRows: "1000",
         dataType: "JSON",
         base_date: baseDate,
         base_time: baseTime,
@@ -285,7 +544,170 @@ export class KmaWeatherProvider {
       }
     }
 
+    return allItems;
+  }
+
+  /**
+   * 기존 단기예보 방식으로 폴백
+   * - VilageFcst를 사용해 최대 7일치 일별 예보를 생성
+   */
+  private async getDailyForecast7dFallback(
+    location: WeatherLocation
+  ): Promise<WeatherDailyPoint[]> {
+    const allItems = await this.fetchVilageFcstItemsFor7d(location);
+
     return this.parseDailyForecast7d(allItems);
+  }
+
+  /**
+   * 단기예보 기반 0~3일 일별 예보 생성
+   *
+   * - VilageFcst의 3시간 간격 TMP를 이용해
+   *   오전(00~11시) / 오후(12~23시) 평균 기온을 각각 계산한다.
+   * - 계산된 오전/오후 평균 기온을 WeatherDailyPoint.minC / maxC 에 매핑한다.
+   * - 추정 값(임의 보정값)은 사용하지 않는다.
+   */
+  private async getShortTermDaily0to3(location: WeatherLocation): Promise<WeatherDailyPoint[]> {
+    const allItems = await this.fetchVilageFcstItemsFor7d(location);
+
+    // 날짜별로 아이템 그룹화
+    const groupedByDate: Record<string, VilageFcstItem[]> = {};
+    for (const item of allItems) {
+      const dateKey = item.fcstDate; // YYYYMMDD
+      if (!groupedByDate[dateKey]) {
+        groupedByDate[dateKey] = [];
+      }
+      groupedByDate[dateKey].push(item);
+    }
+
+    // 한국 시간대 기준 오늘 날짜 계산
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+    today.setHours(0, 0, 0, 0);
+
+    const result: WeatherDailyPoint[] = [];
+
+    for (const dateStr of Object.keys(groupedByDate)) {
+      const items = groupedByDate[dateStr];
+
+      // 날짜 파싱
+      const year = parseInt(dateStr.substring(0, 4), 10);
+      const month = parseInt(dateStr.substring(4, 6), 10) - 1;
+      const day = parseInt(dateStr.substring(6, 8), 10);
+      const dateObj = new Date(year, month, day);
+      dateObj.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.floor((dateObj.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // 0~3일 범위만 사용
+      if (diffDays < 0 || diffDays > 3) continue;
+
+      // 오전/오후 TMP 평균 계산
+      let morningSum = 0;
+      let morningCount = 0;
+      let afternoonSum = 0;
+      let afternoonCount = 0;
+
+      // 강수확률/하늘/강수형태는 하루 전체 기준 최대/대표값을 사용
+      let maxPop: number | undefined;
+      let skyCode: 1 | 3 | 4 | undefined;
+      let ptyCode: 0 | 1 | 2 | 3 | 5 | 6 | 7 | undefined;
+
+      for (const item of items) {
+        const hour = parseInt(item.fcstTime.substring(0, 2), 10);
+
+        if (item.category === "TMP") {
+          const temp = parseFloat(item.fcstValue);
+          if (!Number.isNaN(temp)) {
+            if (hour < 12) {
+              morningSum += temp;
+              morningCount += 1;
+            } else {
+              afternoonSum += temp;
+              afternoonCount += 1;
+            }
+          }
+        } else if (item.category === "POP") {
+          const pop = parseInt(item.fcstValue, 10);
+          if (!Number.isNaN(pop)) {
+            maxPop = maxPop !== undefined ? Math.max(maxPop, pop) : pop;
+          }
+        } else if (item.category === "SKY") {
+          const sky = parseInt(item.fcstValue, 10);
+          if (sky === 1 || sky === 3 || sky === 4) {
+            skyCode = sky;
+          }
+        } else if (item.category === "PTY") {
+          const pty = parseInt(item.fcstValue, 10);
+          if (
+            pty === 0 ||
+            pty === 1 ||
+            pty === 2 ||
+            pty === 3 ||
+            pty === 5 ||
+            pty === 6 ||
+            pty === 7
+          ) {
+            ptyCode = pty;
+          }
+        }
+      }
+
+      // 오전/오후 데이터가 하나도 없으면 이 날짜는 스킵 (추정 값 사용 금지)
+      if (morningCount === 0 || afternoonCount === 0) {
+        continue;
+      }
+
+      const morningAvg = morningSum / morningCount;
+      const afternoonAvg = afternoonSum / afternoonCount;
+
+      const point: WeatherDailyPoint = {
+        date: `${year}-${(month + 1).toString().padStart(2, "0")}-${day
+          .toString()
+          .padStart(2, "0")}`,
+        // 오전/오후 평균을 minC / maxC에 매핑
+        minC: Math.round(morningAvg),
+        maxC: Math.round(afternoonAvg),
+        precipProbMaxPct: maxPop,
+        sky: skyCode,
+        pty: ptyCode,
+      };
+
+      result.push(point);
+    }
+
+    // 날짜순 정렬 후 반환
+    return result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  /**
+   * 중기예보 기반 4~7일 일별 예보 생성
+   */
+  private async getMidTermDaily4to7(location: WeatherLocation): Promise<WeatherDailyPoint[]> {
+    const regId = this.convertGridToRegId(location.nx, location.ny);
+    const [tempData, landData] = await Promise.all([
+      this.getMidTemperature(regId),
+      this.getMidLandForecast(regId),
+    ]);
+
+    const allMid = this.combineMidForecastData(tempData, landData);
+
+    // 한국 시간대 기준 오늘 날짜
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const now = new Date();
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const today = new Date(kstNow.getFullYear(), kstNow.getMonth(), kstNow.getDate());
+    today.setHours(0, 0, 0, 0);
+
+    return allMid.filter((point) => {
+      const d = new Date(point.date);
+      d.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      // 4~7일만 사용 (3일차는 단기예보로 대체)
+      return diffDays >= 4 && diffDays <= 7;
+    });
   }
 
   // === PRIVATE METHODS ===
@@ -522,10 +944,10 @@ export class KmaWeatherProvider {
         }
       }
 
-      // 기본값 설정
-      tempC = tempC ?? 20;
-      humidityPct = humidityPct ?? 50;
-      precipProbPct = precipProbPct ?? 0;
+      // 기본값 설정 (NaN도 체크)
+      tempC = tempC != null && !isNaN(tempC) ? tempC : 20;
+      humidityPct = humidityPct != null && !isNaN(humidityPct) ? humidityPct : 50;
+      precipProbPct = precipProbPct != null && !isNaN(precipProbPct) ? precipProbPct : 0;
 
       result.push({
         time: forecastTime.toISOString(),
@@ -564,12 +986,19 @@ export class KmaWeatherProvider {
     const data = vilageHourlyMap.get(timeKey);
     if (!data) return null;
 
+    const tempC = data.TMP ? parseFloat(data.TMP) : undefined;
+    const humidityPct = data.REH ? parseInt(data.REH, 10) : undefined;
+    const precipProbPct = data.POP ? parseInt(data.POP, 10) : undefined;
+    const sky = data.SKY ? (parseInt(data.SKY, 10) as 1 | 3 | 4) : undefined;
+    const pty = data.PTY ? (parseInt(data.PTY, 10) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined;
+
+    // NaN 값은 undefined로 처리
     return {
-      tempC: data.TMP ? parseFloat(data.TMP) : undefined,
-      humidityPct: data.REH ? parseInt(data.REH) : undefined,
-      precipProbPct: data.POP ? parseInt(data.POP) : undefined,
-      sky: data.SKY ? (parseInt(data.SKY) as 1 | 3 | 4) : undefined,
-      pty: data.PTY ? (parseInt(data.PTY) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined,
+      tempC: tempC != null && !isNaN(tempC) ? tempC : undefined,
+      humidityPct: humidityPct != null && !isNaN(humidityPct) ? humidityPct : undefined,
+      precipProbPct: precipProbPct != null && !isNaN(precipProbPct) ? precipProbPct : undefined,
+      sky: sky != null && !isNaN(sky) ? sky : undefined,
+      pty: pty != null && !isNaN(pty) ? pty : undefined,
     };
   }
 

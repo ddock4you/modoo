@@ -109,7 +109,7 @@ async function testCacheStorage(): Promise<void> {
 
     // 4. 일별 날씨 데이터 저장
     console.log("4. 일별 날씨 데이터 저장...");
-    await weatherCache.setDaily(testLocationId, testBaseTime, mockWeatherDaily);
+    await weatherCache.setDaily(testLocationId, testBaseTime, mockWeatherDaily, "short");
 
     // 5. 대기질 데이터 저장
     console.log("5. 대기질 데이터 저장...");
@@ -146,7 +146,7 @@ async function testCacheStorage(): Promise<void> {
     }
 
     // 4. 일별 날씨 조회
-    const dailyData = await weatherCache.getDaily(testLocationId, testBaseTime);
+    const dailyData = await weatherCache.getDaily(testLocationId, testBaseTime, "short");
     console.log("4. 일별 날씨 조회:", dailyData ? "✅ 성공" : "❌ 실패");
     if (dailyData) {
       console.log(`   - 데이터 개수: ${dailyData.data.length}`);

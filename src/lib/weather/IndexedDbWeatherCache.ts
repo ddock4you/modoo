@@ -25,7 +25,8 @@ export class IndexedDbWeatherCache {
   private readonly TTL_MINUTES = {
     now: 10, // 현재 날씨: 10분
     hourly: 60, // 시간별: 60분
-    daily: 6 * 60, // 일별: 6시간
+    shortTermDaily: 6 * 60, // 단기예보 일별: 6시간
+    midTermDaily: 12 * 60, // 중기예보 일별: 12시간
     airQuality: 60, // 대기질: 60분
   } as const;
 
@@ -93,18 +94,28 @@ export class IndexedDbWeatherCache {
    */
   async getDaily(
     locationId: string,
-    baseTime: number
+    baseTime: number,
+    type: "short" | "mid" = "short"
   ): Promise<WeatherCacheResult<WeatherDailyPoint[]> | null> {
-    return this.getCacheEntry("weather_daily", [locationId, baseTime]);
+    return this.getCacheEntry("weather_daily", [locationId, type, baseTime]);
   }
 
   /**
    * 일별 날씨 데이터 캐시 저장
    */
-  async setDaily(locationId: string, baseTime: number, data: WeatherDailyPoint[]): Promise<void> {
-    const expiresAt = Date.now() + this.TTL_MINUTES.daily * 60 * 1000;
-    await this.setCacheEntry("weather_daily", [locationId, baseTime], {
+  async setDaily(
+    locationId: string,
+    baseTime: number,
+    data: WeatherDailyPoint[],
+    type: "short" | "mid" = "short"
+  ): Promise<void> {
+    const ttlMinutes =
+      type === "mid" ? this.TTL_MINUTES.midTermDaily : this.TTL_MINUTES.shortTermDaily;
+    const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
+
+    await this.setCacheEntry("weather_daily", [locationId, type, baseTime], {
       locationId,
+      type,
       baseTime,
       data,
       expiresAt,
