@@ -202,44 +202,26 @@ export class KmaWeatherProvider {
   }
 
   /**
-   * 24시간 시간별 예보 (UltraSrtFcst + VilageFcst 조합)
+   * 24시간 시간별 예보 (단기예보 1시간 데이터 기준)
+   *
+   * - 2024-11 단기예보 개편 이후, 1일째~4일째까지는 1시간 간격 수치 예보 제공
+   * - 이 메서드는 UltraSrtFcst(초단기예보)를 사용하지 않고,
+   *   VilageFcst(단기예보)만으로 현재 시각 기준 0~24시간 구간을 구성한다.
    */
   async getHourlyForecast24h(location: WeatherLocation): Promise<WeatherHourlyPoint[]> {
     const now = new Date();
-    const baseDate = this.formatDate(now);
-    // UltraSrtFcst는 초단기실황 발표시간과 동일하게 매시간 30분에 발표됨
-    const baseTime = this.getBaseTimeForCurrent(now);
+    // VilageFcst(단기예보)는 고정 발표시각(02, 05, 08, 11, 14, 17, 20, 23시)을 사용해야 함
+    const { baseDate: vilageBaseDate, baseTime: vilageBaseTime } =
+      this.getBaseTimeForVilageForecast(now);
 
-    // 1. UltraSrtFcst (0-6시간) 호출
-    const ultraParams = new URLSearchParams({
-      serviceKey: this.apiKey,
-      pageNo: "1",
-      numOfRows: "60",
-      dataType: "JSON",
-      base_date: baseDate,
-      base_time: baseTime,
-      nx: location.nx.toString(),
-      ny: location.ny.toString(),
-    });
-
-    const ultraUrl = `${this.baseUrl}/VilageFcstInfoService_2.0/getUltraSrtFcst?${ultraParams}`;
-    const ultraResponse = await fetch(ultraUrl);
-    const ultraData: KmaApiResponse<UltraSrtFcstItem> = await ultraResponse.json();
-
-    if (ultraData.response?.header?.resultCode !== "00") {
-      throw new Error(`KMA UltraSrtFcst API Error: ${ultraData.response?.header?.resultMsg}`);
-    }
-
-    const ultraItems = ultraData.response?.body?.items?.item || [];
-
-    // 2. VilageFcst (6-24시간) 호출
+    // VilageFcst 단기예보 호출 (0~24h 1시간 단위 예보를 단일 소스로 사용)
     const vilageParams = new URLSearchParams({
       serviceKey: this.apiKey,
       pageNo: "1",
       numOfRows: "200",
       dataType: "JSON",
-      base_date: baseDate,
-      base_time: baseTime,
+      base_date: vilageBaseDate,
+      base_time: vilageBaseTime,
       nx: location.nx.toString(),
       ny: location.ny.toString(),
     });
@@ -249,15 +231,13 @@ export class KmaWeatherProvider {
     const vilageData: KmaApiResponse<VilageFcstItem> = await vilageResponse.json();
 
     if (vilageData.response?.header?.resultCode !== "00") {
-      console.warn(`KMA VilageFcst API Error: ${vilageData.response?.header?.resultMsg}`);
-      // VilageFcst 실패 시 UltraSrtFcst 데이터만 반환
-      return this.parseHourlyForecast(ultraItems);
+      throw new Error(`KMA VilageFcst API Error: ${vilageData.response?.header?.resultMsg}`);
     }
 
     const vilageItems = vilageData.response?.body?.items?.item || [];
 
-    // 3. 두 데이터 소스 조합 및 보간
-    return this.combineAndInterpolateHourlyData(ultraItems, vilageItems);
+    // UltraSrtFcst는 사용하지 않고, 단기예보만으로 24시간 구간을 구성
+    return this.combineAndInterpolateHourlyData([], vilageItems);
   }
 
   /**
@@ -739,6 +719,45 @@ export class KmaWeatherProvider {
     }
   }
 
+  /**
+   * 단기예보(VilageFcst) 발표시간 결정
+   *
+   * - 공식 문서 기준 base_time 은 02, 05, 08, 11, 14, 17, 20, 23 시 중 하나여야 함
+   * - 현재 시간 기준 가장 최근 발표시각을 선택하고,
+   *   00~01시는 전날 23시 예보를 사용한다.
+   *
+   * 이렇게 해야 VilageFcst가 항상 resultCode "00"으로 정상 응답을 반환하고,
+   * 단기예보 1시간 데이터를 기반으로 현재 시각 기준 0~24시간 시간별 예보를
+   * 안정적으로 구성할 수 있다.
+   */
+  private getBaseTimeForVilageForecast(now: Date): { baseDate: string; baseTime: string } {
+    // KST(Asia/Seoul)를 전제로 하는 단순 로직 (앱 자체가 한국 기준이라 가정)
+    const baseDateObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const hour = now.getHours();
+
+    const candidates = [2, 5, 8, 11, 14, 17, 20, 23];
+    let baseHour = candidates[0];
+    const dateForBase = new Date(baseDateObj);
+
+    if (hour < candidates[0]) {
+      // 새벽 0~1시는 전날 23시 발표분 사용
+      dateForBase.setDate(dateForBase.getDate() - 1);
+      baseHour = 23;
+    } else {
+      // 현재 시각보다 작거나 같은 가장 큰 발표시각을 선택
+      for (const h of candidates) {
+        if (hour >= h) {
+          baseHour = h;
+        }
+      }
+    }
+
+    const baseTime = baseHour.toString().padStart(2, "0") + "00";
+    const baseDate = this.formatDate(dateForBase);
+
+    return { baseDate, baseTime };
+  }
+
   private parseCurrentWeather(items: UltraSrtNcstItem[], timestamp: number): WeatherNow {
     let tempC = 0;
     let humidityPct = 0;
@@ -945,7 +964,11 @@ export class KmaWeatherProvider {
   }
 
   /**
-   * 특정 시간에 대한 VilageFcst 데이터를 보간
+   * 특정 시간에 대한 VilageFcst 데이터를 조회/보간
+   *
+   * 2024-11-28 이후 단기예보가 1시간 간격으로 제공되므로,
+   * 우선 "해당 시각의 정시(HH00)" 데이터가 있으면 그대로 사용하고,
+   * 없는 경우에만 NaN 방지를 위해 안전하게 기본값(undef)로 처리한다.
    */
   private interpolateVilageDataForHour(
     vilageHourlyMap: Map<string, Partial<Record<VilageFcstItem["category"], string>>>,
@@ -958,12 +981,8 @@ export class KmaWeatherProvider {
     pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
   } | null {
     const targetDateStr = this.formatDate(targetTime);
-    const targetHour = targetTime.getHours();
-
-    // 가장 가까운 3시간 단위 시간 찾기 (3시간 단위로 반올림)
-    const baseHour = Math.floor(targetHour / 3) * 3;
-    const baseTime = baseHour.toString().padStart(2, "0") + "00";
-    const timeKey = `${targetDateStr}${baseTime}`;
+    const hourStr = targetTime.getHours().toString().padStart(2, "0");
+    const timeKey = `${targetDateStr}${hourStr}00`;
 
     const data = vilageHourlyMap.get(timeKey);
     if (!data) return null;
