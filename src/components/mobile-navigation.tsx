@@ -24,7 +24,7 @@ export function MobileNavigation() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t border-border">
+    <nav className="fixed w-full max-w-2xl mx-auto bottom-0 left-0 right-0 bg-background border-t border-border">
       <div className="flex items-center justify-around h-16 px-2">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href;

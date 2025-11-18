@@ -1,64 +1,50 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { MobileGuard } from "./MobileGuard";
 import { Dashboard } from "./pages/Dashboard";
 import { Plants } from "./pages/Plants";
 import { PlantDetail } from "./pages/PlantDetail";
 import { Settings } from "./pages/Settings";
 import { Weather } from "./pages/Weather";
 import { DebugDb } from "./pages/DebugDb";
-import { WeatherProvider } from "../lib/weather/WeatherProvider";
+import { IconGallery } from "./pages/IconGallery";
+import App from "../App";
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: (
-      <MobileGuard>
-        <Dashboard />
-      </MobileGuard>
-    ),
-  },
-  {
-    path: "/plants",
-    element: (
-      <MobileGuard>
-        <Plants />
-      </MobileGuard>
-    ),
-  },
-  {
-    path: "/plants/:id",
-    element: (
-      <MobileGuard>
-        <PlantDetail />
-      </MobileGuard>
-    ),
-  },
-  {
-    path: "/settings",
-    element: (
-      <MobileGuard>
-        <Settings />
-      </MobileGuard>
-    ),
-  },
-  {
-    path: "/weather",
-    element: (
-      <MobileGuard>
-        <Weather />
-      </MobileGuard>
-    ),
-  },
-  {
-    path: "/_debug/db",
-    element: <DebugDb />,
+    element: <App />,
+    children: [
+      {
+        index: true,
+        element: <Dashboard />,
+      },
+      {
+        path: "plants",
+        element: <Plants />,
+      },
+      {
+        path: "plants/:id",
+        element: <PlantDetail />,
+      },
+      {
+        path: "settings",
+        element: <Settings />,
+      },
+      {
+        path: "weather",
+        element: <Weather />,
+      },
+      {
+        path: "_debug/db",
+        element: <DebugDb />,
+      },
+      {
+        path: "_debug/icons",
+        element: <IconGallery />,
+      },
+    ],
   },
 ]);
 
 export function AppRouter() {
-  return (
-    <WeatherProvider>
-      <RouterProvider router={router} />
-    </WeatherProvider>
-  );
+  return <RouterProvider router={router} />;
 }

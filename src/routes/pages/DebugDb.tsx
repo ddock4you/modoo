@@ -164,9 +164,17 @@ export function DebugDb() {
       <div className="min-h-screen bg-white text-neutral-900 p-4">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-red-600 mb-2">🛠️ DEV 데이터 브라우저</h1>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 mb-2">
             개발 모드에서만 접근할 수 있습니다. 데이터 조작 시 주의하세요!
           </p>
+          <div className="flex gap-4 text-sm">
+            <a
+              href="/_debug/icons?dev=1"
+              className="text-blue-600 hover:text-blue-800 underline"
+            >
+              🎨 아이콘 갤러리 보기
+            </a>
+          </div>
         </div>
 
         {/* 스토어 정보 */}

@@ -1,33 +1,32 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
+import Header from "./components/Header";
+import { Outlet } from "react-router-dom";
+import { MobileNavigation } from "./components/mobile-navigation";
+import { MobileGuard } from "./routes/MobileGuard";
+import { QueryProvider } from "./lib/query/QueryProvider";
+import { StorageProvider } from "./lib/storage/StorageProvider";
+import { MediaProvider } from "./lib/media/MediaProviders";
+import { WeatherProvider } from "./lib/weather/WeatherProvider";
 import "./App.css";
 
 function App() {
-  const [count, setCount] = useState(0);
-
   return (
-    <div className="min-h-screen bg-white text-neutral-900 p-4">
-      <div className="mb-4 rounded-[var(--radius)] bg-brand text-[--color-brand-foreground] px-4 py-3 text-center font-semibold">
-        모듈 식물 관리 (초기 설정)
-      </div>
-      <div className="text-center">
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>count is {count}</button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">Click on the Vite and React logos to learn more</p>
-    </div>
+    <QueryProvider>
+      <StorageProvider>
+        <MediaProvider>
+          <WeatherProvider>
+            <MobileGuard>
+              <div className="bg-gray-200">
+                <div className="min-h-screen mx-auto max-w-2xl relative bg-white">
+                  <Header />
+                  <Outlet />
+                  <MobileNavigation />
+                </div>
+              </div>
+            </MobileGuard>
+          </WeatherProvider>
+        </MediaProvider>
+      </StorageProvider>
+    </QueryProvider>
   );
 }
 
