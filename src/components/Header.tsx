@@ -1,6 +1,6 @@
 import { Bell, Menu, Sun, Moon } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Logo } from "./Logo";
+import Logo from "./Logo";
 import { Switch } from "./ui/switch";
 import { useState, useEffect } from "react";
 
@@ -39,7 +39,7 @@ export default function Header() {
         <Logo />
       </Link>
       <nav className="flex items-center gap-3">
-        <button className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           {isDarkMode ? <Moon /> : <Sun />}
           <Switch
             checked={isDarkMode}
@@ -48,7 +48,7 @@ export default function Header() {
             className="data-[state=checked]:bg-[#EAEAEA] data-[state=unchecked]:bg-[#EAEAEA] h-7 w-11"
             thumbClassName="bg-[#737373] data-[state=checked]:translate-x-[calc(100%+8px)] data-[state=unchecked]:translate-x-1"
           />
-        </button>
+        </div>
       </nav>
     </header>
   );

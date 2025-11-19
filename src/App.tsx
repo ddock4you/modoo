@@ -7,6 +7,7 @@ import { StorageProvider } from "./lib/storage/StorageProvider";
 import { MediaProvider } from "./lib/media/MediaProviders";
 import { WeatherProvider } from "./lib/weather/WeatherProvider";
 import "./App.css";
+import Footer from "./components/Footer";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
                 <div className="min-h-screen mx-auto max-w-2xl relative bg-white">
                   <Header />
                   <Outlet />
+                  <Footer />
                   <MobileNavigation />
                 </div>
               </div>

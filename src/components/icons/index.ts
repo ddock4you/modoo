@@ -1,5 +1,9 @@
 export type { IconProps } from "./types";
 export { WaterIcon } from "./WaterIcon";
 export { FertilizerIcon } from "./FertilizerIcon";
-export { PlantIcon } from "./PlantIcon";
+export { Plant } from "./Plant";
 export { TaskIcon } from "./TaskIcon";
+export { Home } from "./Home";
+export { Weather } from "./Weather";
+export { My } from "./My";
+export { Watering } from "./Watering";

@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
-import { WaterIcon, FertilizerIcon, PlantIcon, TaskIcon } from "../../components/icons";
+import { WaterIcon, FertilizerIcon, Plant, TaskIcon } from "../../components/icons";
 import type { IconProps } from "../../components/icons";
 
 // DEV 전용 가드 컴포넌트
@@ -52,8 +52,8 @@ const iconDefinitions: IconDefinition[] = [
     usage: "비료 작업, 영양 공급 관련 UI",
   },
   {
-    name: "PlantIcon",
-    component: PlantIcon,
+    name: "Plant",
+    component: Plant,
     description: "식물을 나타내는 일반 아이콘",
     usage: "식물 목록, 식물 관련 UI",
   },
@@ -185,7 +185,7 @@ export function IconGallery() {
                 {`import {
   WaterIcon,
   FertilizerIcon,
-  PlantIcon,
+  Plant,
   TaskIcon
 } from '../components/icons';`}
               </pre>
