@@ -1,5 +1,36 @@
 export type TaskType = "water";
 
+/**
+ * 식물 상태 타입
+ * - good: 양호 - 물 주기가 다가오기 전에 물을 줬을 때
+ * - warning: 주의 - 물을 줘야하는 날이 지난지 이틀째까지
+ * - danger: 위험 - 물을 줘야하는 날이 지난지 삼일째 이후
+ * - null: 상태 없음 (TaskRule이 없거나 비활성화된 경우)
+ */
+export type PlantStatus = "good" | "warning" | "danger" | null;
+
+/**
+ * 식물 상태 정보 (상태 + 관련 규칙)
+ */
+export interface PlantStatusInfo {
+  plant: Plant;
+  status: PlantStatus;
+  rule: TaskRule | null; // 상태 계산에 사용된 규칙 (없으면 null)
+  daysOverdue?: number; // 지연된 일수 (양호일 경우 undefined)
+}
+
+/**
+ * 전체 식물 상태 통계
+ */
+export interface PlantsStatusStats {
+  total: number; // 전체 식물 수
+  good: number; // 양호 상태 식물 수
+  warning: number; // 주의 상태 식물 수
+  danger: number; // 위험 상태 식물 수
+  noStatus: number; // 상태 없음 식물 수
+  goodPercentage: number; // 양호 비율 (0-100)
+}
+
 export interface Plant {
   id: string;
   name: string;

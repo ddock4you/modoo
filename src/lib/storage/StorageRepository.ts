@@ -1,6 +1,19 @@
-import type { Plant, TaskEvent, TaskRule, PhotoMeta } from "../../domain/types";
+import type {
+  Plant,
+  PlantStatus,
+  PlantStatusInfo,
+  PlantsStatusStats,
+  TaskEvent,
+  TaskRule,
+  PhotoMeta,
+} from "../../domain/types";
 import type { ModooDB } from "./db";
 import type { IDBPDatabase } from "idb";
+import {
+  calculatePlantStatus,
+  calculateAllPlantsStatus,
+  calculatePlantsStatusStats,
+} from "../../domain/use-cases/calculatePlantStatus";
 
 export interface StorageRepository {
   // Plants
@@ -26,6 +39,11 @@ export interface StorageRepository {
 
   // Queries
   getDueTasks(nowMs: number): Promise<Array<{ plant: Plant; rule: TaskRule }>>;
+
+  // Plant Status
+  getPlantStatus(plantId: string, nowMs?: number): Promise<PlantStatusInfo>;
+  getAllPlantsStatus(nowMs?: number): Promise<PlantStatusInfo[]>;
+  getPlantsStatusStats(nowMs?: number): Promise<PlantsStatusStats>;
 }
 
 export class IndexedDbRepository implements StorageRepository {
@@ -185,5 +203,26 @@ export class IndexedDbRepository implements StorageRepository {
 
   async deletePhoto(id: string): Promise<void> {
     await this.db.delete("photos", id);
+  }
+
+  // Plant Status
+  async getPlantStatus(plantId: string, nowMs: number = Date.now()): Promise<PlantStatusInfo> {
+    const plant = await this.getPlant(plantId);
+    if (!plant) {
+      throw new Error(`Plant with id ${plantId} not found`);
+    }
+
+    const rules = await this.listTaskRules(plantId);
+    return calculatePlantStatus(plant, rules, nowMs);
+  }
+
+  async getAllPlantsStatus(nowMs: number = Date.now()): Promise<PlantStatusInfo[]> {
+    const [plants, rules] = await Promise.all([this.listPlants(), this.listTaskRules()]);
+    return calculateAllPlantsStatus(plants, rules, nowMs);
+  }
+
+  async getPlantsStatusStats(nowMs: number = Date.now()): Promise<PlantsStatusStats> {
+    const statusInfos = await this.getAllPlantsStatus(nowMs);
+    return calculatePlantsStatusStats(statusInfos);
   }
 }
