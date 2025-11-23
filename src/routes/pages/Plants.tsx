@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { Button } from "../../components/ui/button";
+import PlantsList from "../../components/PlantsList";
 import { generateId, type Plant } from "../../domain/types";
 import { useState } from "react";
 
@@ -126,36 +126,6 @@ export function Plants() {
       deletePlantMutation.mutate(id);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="pb-16 bg-background text-foreground p-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-muted-foreground">식물 목록을 불러오는 중...</p>
-        </div>
-        <MobileNavigation />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="pb-16 bg-background text-foreground p-4">
-        <div className="text-center text-destructive">
-          <p>식물 목록을 불러오는데 실패했습니다.</p>
-          <Button
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
-            variant="destructive"
-            className="mt-2"
-          >
-            다시 시도
-          </Button>
-        </div>
-        <MobileNavigation />
-      </div>
-    );
-  }
 
   return (
     <div className="pb-16 bg-background text-foreground p-4">
@@ -302,43 +272,23 @@ export function Plants() {
         </div>
       )}
 
-      {plants.length === 0 ? (
-        <div className="text-center text-muted-foreground py-8">
-          <p>등록된 식물이 없습니다.</p>
-          <p className="text-sm mt-2">위의 "새 식물 추가" 버튼을 눌러 첫 식물을 등록해보세요.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {plants.map((plant) => (
-            <div
-              key={plant.id}
-              className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
-            >
-              <div className="flex-1">
-                <Link
-                  to={`/plants/${plant.id}`}
-                  className="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  {plant.name}
-                </Link>
-                <div className="text-sm text-muted-foreground">
-                  등록일: {new Date(plant.adoptedAt).toLocaleDateString()}
-                </div>
-              </div>
-              <Button
-                onClick={() => handleDeletePlant(plant.id)}
-                disabled={deletePlantMutation.isPending}
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-              >
-                삭제
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-      <MobileNavigation />
+      <PlantsList
+        plants={plants}
+        isLoading={isLoading}
+        error={error}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
+        renderPlantAction={(plant) => (
+          <Button
+            onClick={() => handleDeletePlant(plant.id)}
+            disabled={deletePlantMutation.isPending}
+            variant="outline"
+            size="sm"
+            className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+          >
+            삭제
+          </Button>
+        )}
+      />
     </div>
   );
 }

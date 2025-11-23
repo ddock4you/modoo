@@ -7,3 +7,5 @@ export { Home } from "./Home";
 export { Weather } from "./Weather";
 export { My } from "./My";
 export { Watering } from "./Watering";
+export { WaterDrop3 } from "./WaterDrop3";
+export { Sun } from "./Sun";

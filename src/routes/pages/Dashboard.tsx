@@ -3,7 +3,9 @@ import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { WeatherWidget } from "../../components/weather/WeatherWidget";
+import PlantsList from "../../components/PlantsList";
 import type { TaskRule, Plant } from "../../domain/types";
+import { ChevronRight } from "lucide-react";
 
 interface DueTask {
   plant: Plant;
@@ -17,8 +19,8 @@ export function Dashboard() {
   // Due 작업 조회
   const {
     data: dueTasks = [],
-    isLoading,
-    error,
+    isLoading: dueLoading,
+    error: dueError,
   } = useQuery({
     queryKey: ["dueTasks"],
     queryFn: async (): Promise<DueTask[]> => {
@@ -71,7 +73,17 @@ export function Dashboard() {
     }
   };
 
-  if (isLoading) {
+  const {
+    data: plants = [],
+    isLoading: plantsLoading,
+    error: plantsError,
+    refetch: refetchPlants,
+  } = useQuery({
+    queryKey: ["plants"],
+    queryFn: () => storage.listPlants(),
+  });
+
+  if (dueLoading) {
     return (
       <div className="pb-16 bg-background text-foreground p-4">
         <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
@@ -84,7 +96,7 @@ export function Dashboard() {
     );
   }
 
-  if (error) {
+  if (dueError) {
     return (
       <div className="pb-16 bg-background text-foreground p-4">
         <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
@@ -178,6 +190,21 @@ export function Dashboard() {
       {/* Weather Widget */}
       <div className="mt-6">
         <WeatherWidget />
+      </div>
+
+      <div className="flex flex-col gap-7">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#3A3431]">나의 화분 목록</h2>
+          <Link to="/plants">
+            <ChevronRight size={24} className="text-[#3A3431]" />
+          </Link>
+        </div>
+        <PlantsList
+          plants={plants}
+          isLoading={plantsLoading}
+          error={plantsError}
+          onRetry={refetchPlants}
+        />
       </div>
 
       {/* Quick Actions */}
