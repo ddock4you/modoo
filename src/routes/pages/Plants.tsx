@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
-import { MobileNavigation } from "../../components/mobile-navigation";
 import { Button } from "../../components/ui/button";
 import PlantsList from "../../components/PlantsList";
 import { generateId, type Plant } from "../../domain/types";

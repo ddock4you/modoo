@@ -1,6 +1,5 @@
 import type {
   Plant,
-  PlantStatus,
   PlantStatusInfo,
   PlantsStatusStats,
   TaskEvent,

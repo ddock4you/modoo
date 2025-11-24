@@ -4,7 +4,7 @@ import {
   calculateAllPlantsStatus,
   calculatePlantsStatusStats,
 } from "./calculatePlantStatus";
-import type { Plant, TaskRule } from "../types";
+import type { Plant, PlantStatus, TaskRule } from "../types";
 
 describe("calculatePlantStatus", () => {
   const basePlant: Plant = {

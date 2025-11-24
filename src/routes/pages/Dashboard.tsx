@@ -3,6 +3,7 @@ import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { WeatherWidget } from "../../components/weather/WeatherWidget";
+import { VisualSection } from "../../components/dashboard-visual/VisualSection";
 import PlantsList from "../../components/PlantsList";
 import type { TaskRule, Plant } from "../../domain/types";
 import { ChevronRight } from "lucide-react";
@@ -85,8 +86,7 @@ export function Dashboard() {
 
   if (dueLoading) {
     return (
-      <div className="pb-16 bg-background text-foreground p-4">
-        <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
+      <div className="pb-16 bg-background text-foreground">
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-muted-foreground">작업 목록을 불러오는 중...</p>
@@ -98,8 +98,7 @@ export function Dashboard() {
 
   if (dueError) {
     return (
-      <div className="pb-16 bg-background text-foreground p-4">
-        <h1 className="text-lg font-semibold mb-2">Dashboard</h1>
+      <div className="pb-16 bg-background text-foreground">
         <div className="text-center py-8">
           <p className="text-destructive">작업 목록을 불러오는데 실패했습니다.</p>
         </div>
@@ -109,8 +108,9 @@ export function Dashboard() {
   }
 
   return (
-    <div className="pb-16 bg-background text-foreground p-4">
-      <h1 className="text-lg font-semibold mb-4">Dashboard</h1>
+    <div className="pb-16 bg-background text-foreground">
+      {/* Visual Section */}
+      <VisualSection />
 
       {/* Overdue Tasks */}
       {overdueTasks.length > 0 && (
