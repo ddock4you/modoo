@@ -5,23 +5,12 @@
  */
 
 import React from "react";
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Area,
-  Bar,
-  CartesianGrid,
-} from "recharts";
+import { ResponsiveContainer, ComposedChart, Line, XAxis, YAxis, Bar } from "recharts";
 import type { WeatherHourlyPoint } from "../../domain/types";
 
 export interface HourlyChartProps {
   points: WeatherHourlyPoint[];
   showTemperature?: boolean;
-  showHumidity?: boolean;
   showPrecipitation?: boolean;
   height?: number;
 }
@@ -29,7 +18,6 @@ export interface HourlyChartProps {
 export function HourlyChart({
   points,
   showTemperature = true,
-  showHumidity = true,
   showPrecipitation = true,
   height = 200,
 }: HourlyChartProps) {
@@ -51,117 +39,66 @@ export function HourlyChart({
     [points]
   );
 
-  // 툴팁 포맷터
-  const tooltipFormatter = React.useCallback((value: any, name: string) => {
-    if (name === "temp") return [`${value}°C`, "온도"];
-    if (name === "humidity") return [`${value}%`, "습도"];
-    if (name === "precip") return [`${value}%`, "강수확률"];
-    return [value, name];
-  }, []);
-
-  // X축 틱 포맷터 (2시간 간격으로 표시)
-  const xAxisTickFormatter = React.useCallback((value: any, index: number) => {
-    return index % 2 === 0 ? value : "";
-  }, []);
-
   return (
-    <div className="w-full">
-      {/* 가로 스크롤 컨테이너 */}
-      <div className="overflow-x-auto pb-2">
-        <div style={{ minWidth: "800px", width: "max-content" }}>
-          <ResponsiveContainer width="100%" height={height}>
-            <ComposedChart
-              data={chartData}
-              margin={{
-                top: 10,
-                right: 30,
-                left: 20,
-                bottom: 5,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+    <div className="w-full text-foreground">
+      {/* 차트 컨테이너 (스크롤은 부모에서 처리) */}
+      <div style={{ minWidth: "1510px", width: "max-content" }} className="outline-none">
+        <ResponsiveContainer width="100%" height={height}>
+          <ComposedChart
+            data={chartData}
+            margin={{
+              top: 0,
+              right: 0,
+              left: -4,
+              bottom: -30,
+            }}
+          >
+            {/* <CartesianGrid strokeDasharray="3 3" opacity={0.3} /> */}
 
-              {/* X축: 시간 레이블 */}
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 11 }}
-                interval={0}
-                tickFormatter={xAxisTickFormatter}
-                axisLine={false}
-                tickLine={false}
+            {/* X축: 시간 레이블 */}
+            <XAxis
+              dataKey="label"
+              tick={false}
+              interval={0}
+              tickFormatter={() => ""}
+              axisLine={false}
+              tickLine={false}
+            />
+
+            {/* Y축들 */}
+            {showTemperature && (
+              <YAxis yAxisId="temp" orientation="left" hide domain={["dataMin-2", "dataMax+2"]} />
+            )}
+
+            {showPrecipitation && <YAxis yAxisId="precip" hide domain={[0, 100]} />}
+
+            {/* 온도 영역 차트 */}
+            {showTemperature && (
+              <Line
+                yAxisId="temp"
+                type="monotone"
+                dataKey="temp"
+                stroke="#F5F5F5"
+                strokeWidth={1.5}
+                dot={{ fill: "#0284C7", r: 4, strokeWidth: 2, stroke: "#ffffff" }}
+                activeDot={{ fill: "#0284C7", r: 4, strokeWidth: 2, stroke: "#ffffff" }}
+                name="temp"
               />
+            )}
 
-              {/* Y축들 */}
-              {showTemperature && (
-                <YAxis yAxisId="temp" orientation="left" hide domain={["dataMin-2", "dataMax+2"]} />
-              )}
-
-              {showHumidity && (
-                <YAxis yAxisId="humidity" orientation="right" hide domain={[0, 100]} />
-              )}
-
-              {showPrecipitation && <YAxis yAxisId="precip" hide domain={[0, 100]} />}
-
-              {/* 툴팁 */}
-              <Tooltip
-                formatter={tooltipFormatter}
-                labelStyle={{ color: "#374151" }}
-                contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "6px",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                }}
+            {/* 강수확률 막대 차트 */}
+            {showPrecipitation && (
+              <Bar
+                yAxisId="precip"
+                dataKey="precip"
+                fill="#a78bfa"
+                barSize={5}
+                radius={[2, 2, 0, 0]}
+                name="precip"
               />
-
-              {/* 온도 영역 차트 */}
-              {showTemperature && (
-                <Area
-                  yAxisId="temp"
-                  type="monotone"
-                  dataKey="temp"
-                  stroke="#ef4444"
-                  fill="#fecaca"
-                  fillOpacity={0.3}
-                  strokeWidth={2}
-                  name="temp"
-                />
-              )}
-
-              {/* 습도 선 차트 */}
-              {showHumidity && (
-                <Line
-                  yAxisId="humidity"
-                  type="monotone"
-                  dataKey="humidity"
-                  stroke="#3b82f6"
-                  dot={false}
-                  strokeWidth={2}
-                  name="humidity"
-                />
-              )}
-
-              {/* 강수확률 막대 차트 */}
-              {showPrecipitation && (
-                <Bar
-                  yAxisId="precip"
-                  dataKey="precip"
-                  fill="#a78bfa"
-                  barSize={6}
-                  radius={[2, 2, 0, 0]}
-                  name="precip"
-                />
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* 스크롤 인디케이터 */}
-      <div className="flex justify-center mt-2">
-        <div className="text-xs text-muted-foreground">
-          ← 스크롤하여 전체 24시간 데이터를 확인하세요 →
-        </div>
+            )}
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

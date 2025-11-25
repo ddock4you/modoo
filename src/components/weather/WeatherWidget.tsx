@@ -4,7 +4,7 @@
  */
 
 import { Link } from "react-router-dom";
-import { ChevronRight, RefreshCw, Wifi, WifiOff, ArrowDown, ArrowUp } from "lucide-react";
+import { ChevronRight, RefreshCw, WifiOff, ArrowDown, ArrowUp } from "lucide-react";
 import { HourlyChart } from "./HourlyChart";
 import { HumidityChart } from "./HumidityChart";
 import {
@@ -15,6 +15,7 @@ import {
   useCurrentWeather,
   useDailyWeather,
 } from "../../lib/weather/useWeather";
+import { cn } from "../../lib/utils";
 
 export function WeatherWidget() {
   const summary = useWeatherSummary();
@@ -108,106 +109,142 @@ export function WeatherWidget() {
 
   return (
     <div className="bg-card text-card-foreground rounded-lg p-4 border">
-      {/* 상단 상태 바 */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1 text-muted-foreground text-xs">
-          {summary.isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-          <span className="truncate max-w-[140px]">{summary.location?.name || "현재 위치"}</span>
-        </div>
-        <Link
-          to="/weather"
-          className="flex items-center gap-1 text-xs text-primary hover:underline"
-        >
-          오늘의 날씨 <ChevronRight className="h-3 w-3" />
-        </Link>
-      </div>
-
-      {/* 시간대별 날씨 예보 */}
+      {/* 오늘의 날씨 */}
       <div className="mb-4">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-sm font-semibold">시간대별 날씨 예보</div>
+          <h3 className="text-base font-semibold text-foreground">오늘의 날씨</h3>
+          <Link
+            to="/weather"
+            className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
 
-        {/* 시간대별 날씨 차트 (24시간) */}
+        {/* 차트와 아이콘 리스트를 하나의 스크롤 컨테이너로 묶기 */}
         {hourlyData.length > 0 && (
-          <div className="mb-3">
-            <HourlyChart
-              points={hourlyData}
-              height={120}
-              showTemperature={true}
-              showHumidity={false}
-              showPrecipitation={true}
-            />
-          </div>
-        )}
+          <div
+            className="overflow-x-auto pb-2 outline-none focus:outline-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            tabIndex={-1}
+          >
+            {/* 시간대별 날씨 차트 (24시간) */}
+            <div className="mb-3">
+              <HourlyChart
+                points={hourlyData}
+                height={60}
+                showTemperature={true}
+                showPrecipitation={true}
+              />
+            </div>
 
-        {/* 시간대별 날씨를 아이콘으로 표시 */}
-        {hourlyData.length > 0 && (
-          <div className="grid grid-cols-8 gap-1 text-center">
-            {hourlyData.slice(0, 24).map((point, i) => {
-              const time = new Date(point.time);
-              const hour = time.getHours();
-              const iconName = getIconName(point.pty, point.sky);
+            {/* 시간대별 날씨를 아이콘으로 표시 */}
+            <div className="flex gap-2" style={{ minWidth: "800px", width: "max-content" }}>
+              {hourlyData.slice(0, 24).map((point, i) => {
+                const time = new Date(point.time);
+                const hour = time.getHours();
+                const iconName = getIconName(point.pty, point.sky);
+                const temp = Math.round(point.tempC);
+                const precip = Math.round(point.precipProbPct ?? 0);
+                const isNow = i === 0;
 
-              return (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="text-lg">
-                    {iconName === "sun" && "☀️"}
-                    {iconName === "cloud" && "☁️"}
-                    {iconName === "cloud-rain" && "🌧️"}
-                    {iconName === "cloud-snow" && "❄️"}
-                    {iconName === "moon" && "🌙"}
-                    {iconName === "cloud-moon" && "☁️"}
-                    {!iconName && "☀️"}
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-1 px-1 py-1 rounded-lg min-w-[55px]"
+                  >
+                    <div className="text-lg h-6">
+                      {iconName === "sun" && "☀️"}
+                      {iconName === "cloud" && "☁️"}
+                      {iconName === "cloud-rain" && "🌧️"}
+                      {iconName === "cloud-snow" && "❄️"}
+                      {iconName === "moon" && "🌙"}
+                      {iconName === "cloud-moon" && "☁️"}
+                      {!iconName && "☀️"}
+                    </div>
+                    <div className="text-xs font-medium">{temp}°</div>
+                    <div
+                      className={cn(
+                        "text-xs",
+                        precip > 0 ? "text-sky-500" : "text-muted-foreground"
+                      )}
+                    >
+                      {precip}%
+                    </div>
+                    <div
+                      className={cn(
+                        "text-xs font-medium p-1 px-2 bg-sky-500 rounded-xl",
+                        isNow ? "text-white" : "text-neutral-600 bg-transparent"
+                      )}
+                    >
+                      {isNow ? "지금" : `${hour}시`}
+                    </div>
                   </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {i === 0 ? "지금" : `${hour}시`}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
 
-      {/* 시간대별 습도 예보 */}
+      {/* 오늘의 습도 */}
       <div className="mb-3">
         <div className="mb-2 flex items-center justify-between">
-          <div className="text-sm font-semibold">시간대별 습도 예보</div>
+          <h3 className="text-base font-semibold text-foreground">오늘의 습도</h3>
+          <Link
+            to="/weather"
+            className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </div>
 
-        {/* 시간대별 습도 차트 (24시간) */}
+        {/* 차트와 아이콘 리스트를 하나의 스크롤 컨테이너로 묶기 */}
         {hourlyData.length > 0 && (
-          <div className="mb-3">
-            <HumidityChart points={hourlyData} height={120} showOptimalRange={true} />
-          </div>
-        )}
+          <div
+            className="overflow-x-auto pb-2 outline-none focus:outline-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            tabIndex={-1}
+          >
+            {/* 시간대별 습도 차트 (24시간) */}
+            <div className="mb-3">
+              <HumidityChart points={hourlyData} height={60} />
+            </div>
 
-        {/* 시간대별 습도의 양을 아이콘으로 표시 */}
-        {hourlyData.length > 0 && (
-          <div className="grid grid-cols-8 gap-1 text-center">
-            {hourlyData.slice(0, 24).map((point, i) => {
-              const time = new Date(point.time);
-              const hour = time.getHours();
-              const humidity = point.humidityPct ?? 50;
+            {/* 시간대별 습도의 양을 아이콘으로 표시 */}
+            <div className="flex gap-2" style={{ minWidth: "800px", width: "max-content" }}>
+              {hourlyData.slice(0, 24).map((point, i) => {
+                const time = new Date(point.time);
+                const hour = time.getHours();
+                const humidity = point.humidityPct ?? 50;
+                const isNow = i === 0;
 
-              // 습도에 따른 아이콘 선택
-              let humidityIcon = "💧"; // 기본
-              if (humidity >= 70) humidityIcon = "💦"; // 높음
-              else if (humidity >= 50) humidityIcon = "💧"; // 적정
-              else if (humidity >= 30) humidityIcon = "🌫️"; // 낮음
-              else humidityIcon = "🏜️"; // 매우 낮음
+                // 습도에 따른 아이콘 선택
+                let humidityIcon = "💧"; // 기본
+                if (humidity >= 70) humidityIcon = "💦"; // 높음
+                else if (humidity >= 50) humidityIcon = "💧"; // 적정
+                else if (humidity >= 30) humidityIcon = "🌫️"; // 낮음
+                else humidityIcon = "🏜️"; // 매우 낮음
 
-              return (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="text-lg">{humidityIcon}</div>
-                  <div className="text-[10px] text-muted-foreground">{humidity}%</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {i === 0 ? "지금" : `${hour}시`}
+                return (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center gap-1 px-1 py-1 rounded-lg min-w-[55px]"
+                  >
+                    <div className="text-lg">{humidityIcon}</div>
+                    <div className="text-xs font-medium">{humidity}%</div>
+                    <div
+                      className={cn(
+                        "text-xs font-medium p-1 px-2 bg-[#FA8500] rounded-xl",
+                        isNow ? "text-white" : "text-neutral-600 bg-transparent"
+                      )}
+                    >
+                      {isNow ? "지금" : `${hour}시`}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -215,9 +252,10 @@ export function WeatherWidget() {
       {/* 상태 카드 (온도/쾌적도) */}
       <div className="flex gap-3 rounded-lg border bg-muted/30 p-3">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+          className={cn(
+            "flex h-12 w-12 items-center justify-center rounded-lg",
             comfortLabel === "쾌적" ? "bg-blue-100 text-blue-700" : "bg-amber-100 text-amber-700"
-          }`}
+          )}
         >
           {comfortLabel === "쾌적" ? "🌤️" : "⚠️"}
         </div>
@@ -228,9 +266,10 @@ export function WeatherWidget() {
             </span>
             {diffVsYesterday !== undefined && (
               <span
-                className={`inline-flex items-center gap-0.5 text-xs ${
+                className={cn(
+                  "inline-flex items-center gap-0.5 text-xs",
                   diffVsYesterday > 0 ? "text-rose-600" : "text-blue-600"
-                }`}
+                )}
               >
                 {diffVsYesterday > 0 ? (
                   <ArrowUp className="h-3 w-3" />
