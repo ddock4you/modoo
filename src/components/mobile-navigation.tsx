@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { type LucideIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { My } from "./icons/My";
 import { cn } from "@/lib/utils";
 import { Home, Plant, Weather, Watering, type IconProps } from "./icons";
@@ -29,9 +30,26 @@ import { Home, Plant, Weather, Watering, type IconProps } from "./icons";
 
 export function MobileNavigation() {
   // const location = useLocation();
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateHeight = () => {
+      if (navRef.current) {
+        const height = navRef.current.offsetHeight;
+        document.documentElement.style.setProperty("--mobile-nav-height", `${height}px`);
+      }
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, []);
 
   return (
-    <div className="fixed w-full flex flex-col items-center justify-center gap-2 bottom-0 left-0 right-0 bg-background px-4 pt-0 pb-3 rounded-tl-3xl rounded-tr-3xl z-10">
+    <div
+      ref={navRef}
+      className="fixed w-full flex flex-col items-center justify-center gap-2 bottom-0 left-0 right-0 bg-background px-4 pt-0 pb-3 rounded-tl-3xl rounded-tr-3xl z-10"
+    >
       <nav className="w-full flex items-center gap-x-3 gap-y-2">
         <NavigationItem name="홈" href="/" Icon={Home} />
         <NavigationItem name="화분" href="/plants" Icon={Plant} />

@@ -145,7 +145,6 @@ export function Settings() {
       {/* 백업/복원 다이얼로그 */}
       <BackupDialog isOpen={showBackupDialog} onClose={() => setShowBackupDialog(false)} />
       <RestoreDialog isOpen={showRestoreDialog} onClose={() => setShowRestoreDialog(false)} />
-      <MobileNavigation />
     </div>
   );
 }

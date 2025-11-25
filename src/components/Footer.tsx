@@ -4,7 +4,11 @@ import { Mail } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="pb-25">
+    <footer
+      style={{
+        paddingBottom: "var(--mobile-nav-height, 0px)",
+      }}
+    >
       <div className=" px-7 py-9 bg-[#1C1D1D] dark:bg-gray-900 flex flex-col text-neutral-400">
         <Link to="/" className="mb-4">
           <LogoDark />

@@ -26,59 +26,68 @@ export function DailyList({
   showHumidity = false,
 }: DailyListProps) {
   // 데이터 가공
-  const dailyItems = React.useMemo(
-    () =>
-      (points || []).slice(0, maxItems).map((point) => {
-        const date = new Date(point.date);
-        const isToday = new Date().toDateString() === date.toDateString();
-        const isTomorrow =
-          new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString() === date.toDateString();
+  const dailyItems = React.useMemo(() => {
+    // 중복 날짜 제거: 같은 날짜의 첫 번째 항목만 유지
+    const seenDates = new Set<string>();
+    const uniquePoints = (points || []).filter((point) => {
+      const dateKey = point.date;
+      if (seenDates.has(dateKey)) {
+        return false;
+      }
+      seenDates.add(dateKey);
+      return true;
+    });
 
-        // 요일 표시
-        let dayLabel = date.toLocaleDateString("ko-KR", { weekday: "short" });
-        if (isToday) dayLabel = "오늘";
-        else if (isTomorrow) dayLabel = "내일";
+    return uniquePoints.slice(0, maxItems).map((point) => {
+      const date = new Date(point.date);
+      const isToday = new Date().toDateString() === date.toDateString();
+      const isTomorrow =
+        new Date(Date.now() + 24 * 60 * 60 * 1000).toDateString() === date.toDateString();
 
-        // 날짜 표시용 문자열 (월/일 형식, 모든 날짜에 표시)
-        const dateLabel = date.toLocaleDateString("ko-KR", {
-          month: "short",
-          day: "numeric",
-        });
+      // 요일 표시
+      let dayLabel = date.toLocaleDateString("ko-KR", { weekday: "short" });
+      if (isToday) dayLabel = "오늘";
+      else if (isTomorrow) dayLabel = "내일";
 
-        // 날씨 아이콘과 텍스트
-        const iconName = getWeatherIconName(point.pty, point.sky);
-        const conditionText = getWeatherConditionText(point.pty, point.sky);
-        const iconColor = getWeatherIconColor(point.pty, point.sky);
+      // 날짜 표시용 문자열 (월/일 형식, 모든 날짜에 표시)
+      const dateLabel = date.toLocaleDateString("ko-KR", {
+        month: "short",
+        day: "numeric",
+      });
 
-        // 아이콘 컴포넌트 매핑 (camelCase로 변환)
-        const iconKeyMap: Record<string, React.ComponentType<{ className?: string }>> = {
-          sun: Icons.Sun,
-          cloud: Icons.Cloud,
-          "cloud-rain": Icons.CloudRain,
-          "cloud-snow": Icons.CloudSnow,
-          "cloud-drizzle": Icons.CloudDrizzle,
-          snowflake: Icons.Snowflake,
-        };
-        const IconComponent = iconKeyMap[iconName] || Icons.Sun;
+      // 날씨 아이콘과 텍스트
+      const iconName = getWeatherIconName(point.pty, point.sky);
+      const conditionText = getWeatherConditionText(point.pty, point.sky);
+      const iconColor = getWeatherIconColor(point.pty, point.sky);
 
-        return {
-          date: point.date,
-          dayLabel,
-          dateLabel,
-          isToday,
-          isTomorrow,
-          iconName,
-          conditionText,
-          iconColor,
-          IconComponent,
-          minTemp: Math.round(point.minC),
-          maxTemp: Math.round(point.maxC),
-          precipProb: Math.round(point.precipProbMaxPct ?? 0),
-          humidity: point.humidityPct ? Math.round(point.humidityPct) : undefined,
-        };
-      }),
-    [points, maxItems]
-  );
+      // 아이콘 컴포넌트 매핑 (camelCase로 변환)
+      const iconKeyMap: Record<string, React.ComponentType<{ className?: string }>> = {
+        sun: Icons.Sun,
+        cloud: Icons.Cloud,
+        "cloud-rain": Icons.CloudRain,
+        "cloud-snow": Icons.CloudSnow,
+        "cloud-drizzle": Icons.CloudDrizzle,
+        snowflake: Icons.Snowflake,
+      };
+      const IconComponent = iconKeyMap[iconName] || Icons.Sun;
+
+      return {
+        date: point.date,
+        dayLabel,
+        dateLabel,
+        isToday,
+        isTomorrow,
+        iconName,
+        conditionText,
+        iconColor,
+        IconComponent,
+        minTemp: Math.round(point.minC),
+        maxTemp: Math.round(point.maxC),
+        precipProb: Math.round(point.precipProbMaxPct ?? 0),
+        humidity: point.humidityPct ? Math.round(point.humidityPct) : undefined,
+      };
+    });
+  }, [points, maxItems]);
 
   if (!dailyItems.length) {
     return (
@@ -90,9 +99,9 @@ export function DailyList({
 
   return (
     <div className="space-y-2">
-      {dailyItems.map((item) => (
+      {dailyItems.map((item, index) => (
         <div
-          key={item.date}
+          key={`${item.date}-${index}`}
           className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${
             item.isToday
               ? "bg-blue-50 border-blue-200"

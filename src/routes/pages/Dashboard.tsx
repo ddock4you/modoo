@@ -49,8 +49,6 @@ export function Dashboard() {
       <div className="mt-6">
         <WeatherWidget />
       </div>
-
-      <MobileNavigation />
     </div>
   );
 }
