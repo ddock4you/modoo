@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
 import { MobileNavigation } from "../../components/mobile-navigation";
-import { WeatherWidget } from "../../components/weather/WeatherWidget";
+import { WeatherWidget } from "../../components/weather/widget/WeatherWidget";
 import { VisualSection } from "../../components/dashboard-visual/VisualSection";
 import { RecommendedWateringSchedule } from "../../components/watering-schedule";
 import PlantsList from "../../components/PlantsList";
@@ -22,7 +22,7 @@ export function Dashboard() {
   });
 
   return (
-    <div className="pb-16 bg-background text-foreground">
+    <div className="bg-background text-foreground">
       {/* Visual Section */}
       <div className="flex flex-col gap-10">
         <VisualSection />

@@ -3,7 +3,7 @@
  * 대기질 등급을 표시하는 배지 컴포넌트
  */
 
-import type { AirQuality } from "../../domain/types";
+import type { AirQuality } from "../../../domain/types";
 
 export interface AirQualityBadgeProps {
   airQuality: AirQuality | null | undefined;

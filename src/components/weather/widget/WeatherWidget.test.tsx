@@ -21,7 +21,7 @@ const mockUseWeatherIcon = vi.fn();
 const mockUseWeatherFormat = vi.fn();
 const mockUseHourlyWeather = vi.fn();
 
-vi.mock("../../lib/weather/useWeather", () => ({
+vi.mock("@/lib/weather/useWeather", () => ({
   useWeatherSummary: () => mockUseWeatherSummary(),
   useCurrentWeather: () => mockUseCurrentWeather(),
   useDailyWeather: () => mockUseDailyWeather(),
@@ -31,11 +31,11 @@ vi.mock("../../lib/weather/useWeather", () => ({
 }));
 
 // recharts와 차트 컴포넌트 모킹
-vi.mock("./HourlyChart", () => ({
+vi.mock("@/components/weather/charts/HourlyChart", () => ({
   HourlyChart: () => <div data-testid="hourly-chart">HourlyChart Mock</div>,
 }));
 
-vi.mock("./HumidityChart", () => ({
+vi.mock("@/components/weather/charts/HumidityChart", () => ({
   HumidityChart: () => <div data-testid="humidity-chart">HumidityChart Mock</div>,
 }));
 

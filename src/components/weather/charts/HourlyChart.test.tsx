@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { HourlyChart } from "./HourlyChart";
-import type { WeatherHourlyPoint } from "../../domain/types";
+import type { WeatherHourlyPoint } from "@/domain/types";
 
 // Mock recharts components
 vi.mock("recharts", () => ({

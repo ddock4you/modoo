@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DailyList } from "./DailyList";
-import type { WeatherDailyPoint } from "../../domain/types";
+import type { WeatherDailyPoint } from "@/domain/types";
 
 // Mock all possible Lucide icons used in the component
 vi.mock("lucide-react", () => {
@@ -22,7 +22,7 @@ vi.mock("lucide-react", () => {
 });
 
 // Mock iconMap
-vi.mock("../../lib/weather/iconMap", () => ({
+vi.mock("@/lib/weather/iconMap", () => ({
   getWeatherIconName: vi.fn((pty, sky) => {
     if (pty === 1) return "cloud-rain";
     if (sky === 1) return "sun";

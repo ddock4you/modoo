@@ -8,7 +8,7 @@ export function Settings() {
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
 
   return (
-    <div className="pb-16 bg-background text-foreground p-4">
+    <div className="bg-background text-foreground p-4">
       <h1 className="text-lg font-semibold mb-2">설정</h1>
       <p className="text-sm text-muted-foreground mb-6">앱 환경 설정을 구성합니다.</p>
 

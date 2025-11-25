@@ -5,7 +5,7 @@
 
 import React from "react";
 import { ResponsiveContainer, ComposedChart, Line, XAxis, YAxis } from "recharts";
-import type { WeatherHourlyPoint } from "../../domain/types";
+import type { WeatherHourlyPoint } from "../../../domain/types";
 
 export interface HumidityChartProps {
   points: WeatherHourlyPoint[];

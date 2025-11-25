@@ -4,12 +4,12 @@
  */
 
 import React from "react";
-import type { WeatherDailyPoint } from "../../domain/types";
+import type { WeatherDailyPoint } from "@/domain/types";
 import {
   getWeatherIconName,
   getWeatherConditionText,
   getWeatherIconColor,
-} from "../../lib/weather/iconMap";
+} from "@/lib/weather/iconMap";
 import * as Icons from "lucide-react";
 
 export interface DailyListProps {
@@ -51,7 +51,7 @@ export function DailyList({
         const iconColor = getWeatherIconColor(point.pty, point.sky);
 
         // 아이콘 컴포넌트 매핑 (camelCase로 변환)
-        const iconKeyMap: Record<string, any> = {
+        const iconKeyMap: Record<string, React.ComponentType<{ className?: string }>> = {
           sun: Icons.Sun,
           cloud: Icons.Cloud,
           "cloud-rain": Icons.CloudRain,
@@ -101,7 +101,7 @@ export function DailyList({
         >
           {/* 날짜 및 요일 */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="flex-shrink-0 w-12">
+            <div className="shrink-0 w-12">
               <div
                 className={`text-sm font-medium ${
                   item.isToday ? "text-blue-700" : "text-gray-700"

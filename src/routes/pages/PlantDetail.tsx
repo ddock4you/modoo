@@ -134,7 +134,7 @@ export function PlantDetail() {
 
   if (!id) {
     return (
-      <div className="pb-16 bg-background text-foreground p-4">
+      <div className="bg-background text-foreground p-4">
         <p className="text-destructive">식물 ID가 필요합니다.</p>
         <MobileNavigation />
       </div>
@@ -143,7 +143,7 @@ export function PlantDetail() {
 
   if (plantLoading) {
     return (
-      <div className="pb-16 bg-background text-foreground p-4">
+      <div className="bg-background text-foreground p-4">
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
           <p className="text-muted-foreground">식물 정보를 불러오는 중...</p>
@@ -155,7 +155,7 @@ export function PlantDetail() {
 
   if (plantError || !plant) {
     return (
-      <div className="pb-16 bg-background text-foreground p-4">
+      <div className="bg-background text-foreground p-4">
         <div className="text-center py-8">
           <p className="text-destructive">식물을 찾을 수 없습니다.</p>
           <Link
@@ -216,7 +216,7 @@ export function PlantDetail() {
   };
 
   return (
-    <div className="pb-16 bg-background text-foreground p-4">
+    <div className="bg-background text-foreground p-4">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-6">
         <Link

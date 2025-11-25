@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { ChevronLeft, Wifi, WifiOff, AlertCircle, RefreshCw } from "lucide-react";
 import { useWeather, useWeatherFormat, useWeatherIcon } from "../../lib/weather/useWeather";
-import { HourlyChart } from "../../components/weather/HourlyChart";
-import { HumidityChart } from "../../components/weather/HumidityChart";
-import { DailyList } from "../../components/weather/DailyList";
+import { HourlyChart } from "../../components/weather/charts/HourlyChart";
+import { HumidityChart } from "../../components/weather/charts/HumidityChart";
+import { DailyList } from "../../components/weather/lists/DailyList";
 
 function WeatherHeader() {
   const { location, isOnline } = useWeather();

@@ -14,7 +14,7 @@ import {
   Bar,
   CartesianGrid,
 } from "recharts";
-import type { WeatherDailyPoint } from "../../domain/types";
+import type { WeatherDailyPoint } from "../../../domain/types";
 
 export interface DailyChartProps {
   points: WeatherDailyPoint[];
@@ -57,7 +57,7 @@ export function DailyChart({
   );
 
   // 툴팁 포맷터
-  const tooltipFormatter = React.useCallback((value: any, name: string) => {
+  const tooltipFormatter = React.useCallback((value: number | string, name: string) => {
     if (name === "minTemp") return [`${value}°C`, "최저"];
     if (name === "maxTemp") return [`${value}°C`, "최고"];
     if (name === "precip") return [`${value}%`, "강수확률"];
