@@ -28,12 +28,14 @@ interface PlantCardProps {
   direction?: "vertical" | "horizontal";
   isLoading?: boolean;
   className?: string;
+  gridColumns?: number | null;
 }
 
 interface PlantCardSkeletonProps {
   direction?: "vertical" | "horizontal";
   className?: string;
   footer?: ReactNode;
+  gridColumns?: number | null;
 }
 
 interface PlantCardContentProps {
@@ -42,16 +44,23 @@ interface PlantCardContentProps {
   direction?: "vertical" | "horizontal";
   className?: string;
   footer?: ReactNode;
+  gridColumns?: number | null;
 }
 
-function PlantCardSkeleton({ direction = "vertical", className, footer }: PlantCardSkeletonProps) {
+function PlantCardSkeleton({
+  direction = "vertical",
+  className,
+  footer,
+  gridColumns,
+}: PlantCardSkeletonProps) {
   const isHorizontal = direction === "horizontal";
 
   return (
     <article
       className={clsx("flex h-full shrink-0", className, {
         "w-full flex-row": isHorizontal,
-        "w-[33vw] flex-col": !isHorizontal,
+        "flex-col": gridColumns,
+        "w-[33vw] flex-col": !gridColumns && !isHorizontal,
       })}
     >
       <div className="relative overflow-hidden rounded-lg mb-5">
@@ -85,6 +94,7 @@ function PlantCardContent({
   direction = "vertical",
   className,
   footer,
+  gridColumns,
 }: PlantCardContentProps) {
   const isHorizontal = direction === "horizontal";
   const alertInfo = alertInfoByPlant(plant);
@@ -94,7 +104,8 @@ function PlantCardContent({
     <article
       className={clsx("flex h-full shrink-0", className, {
         "w-full flex-row": isHorizontal,
-        "w-[33vw] flex-col": !isHorizontal,
+        "flex-col": gridColumns,
+        "w-[33vw] flex-col": !gridColumns && !isHorizontal,
       })}
     >
       <div className="relative overflow-hidden rounded-lg mb-5">
@@ -142,6 +153,7 @@ export default function PlantCard({
   direction = "vertical",
   isLoading = false,
   className,
+  gridColumns,
 }: PlantCardProps) {
   if (isLoading)
     return <PlantCardSkeleton direction={direction} className={className} footer={footer} />;
@@ -154,6 +166,7 @@ export default function PlantCard({
       direction={direction}
       className={className}
       footer={footer}
+      gridColumns={gridColumns}
     />
   );
 }

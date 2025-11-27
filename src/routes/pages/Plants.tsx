@@ -54,6 +54,7 @@ export function Plants() {
         isLoading={isLoading}
         error={error}
         onRetry={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
+        gridColumns={3}
         renderPlantAction={(plant) => (
           <Button
             onClick={() => handleDeletePlant(plant.id)}

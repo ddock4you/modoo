@@ -104,6 +104,7 @@ function PlantsListContent({
           plant={plant}
           footer={renderPlantAction?.(plant)}
           direction={direction}
+          gridColumns={gridColumns}
         />
       ))}
     </div>
