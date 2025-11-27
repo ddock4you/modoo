@@ -4,33 +4,12 @@ import { useEffect, useRef } from "react";
 import { My } from "./icons/My";
 import { cn } from "@/lib/utils";
 import { Home, Plant, Weather, Watering, type IconProps } from "./icons";
-
-// const navigation = [
-//   {
-//     name: "홈",
-//     href: "/",
-//     icon: Home,
-//   },
-//   {
-//     name: "화분",
-//     href: "/plants",
-//     icon: Flower,
-//   },
-//   {
-//     name: "날씨",
-//     href: "/weather",
-//     icon: Settings,
-//   },
-//   {
-//     name: "설정",
-//     href: "/settings",
-//     icon: My,
-//   },
-// ];
+import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
 
 export function MobileNavigation() {
   // const location = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
+  const { open } = useAddPlantWizard();
 
   useEffect(() => {
     const updateHeight = () => {
@@ -54,12 +33,13 @@ export function MobileNavigation() {
         <NavigationItem name="홈" href="/" Icon={Home} />
         <NavigationItem name="화분" href="/plants" Icon={Plant} />
         <div className="flex-1 flex items-start justify-center">
-          <Link
-            to="/watering"
+          <button
+            type="button"
             className="flex items-center justify-center translate-y-[-30px] min-w-12 min-h-12 w-[15vw] h-[15vw] max-w-20 max-h-20 border-8 border-white rounded-full bg-[#00A576]"
+            onClick={() => open(1)}
           >
             <Watering className="h-5 w-5" />
-          </Link>
+          </button>
         </div>
         <NavigationItem name="날씨" href="/weather" Icon={Weather} />
         <NavigationItem name="설정" href="/settings" Icon={My} />

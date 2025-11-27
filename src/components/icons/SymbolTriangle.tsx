@@ -9,7 +9,7 @@ export const SymbolTriangle = ({ className, size = 36, color = "#24D17E" }: Icon
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    <g clip-path="url(#clip0_1_14555)">
+    <g clipPath="url(#clip0_1_14555)">
       <path
         d="M15.2417 5.29954L2.73823 26.9542C0.63322 30.6003 3.26389 35.1592 7.4763 35.1592H32.4784C36.6884 35.1592 39.3215 30.6003 37.2165 26.9542L24.7154 5.29954C22.6104 1.65341 17.3467 1.65341 15.2393 5.29954H15.2417Z"
         fill={color}
@@ -277,8 +277,8 @@ export const SymbolTriangle = ({ className, size = 36, color = "#24D17E" }: Icon
       <path
         d="M19.4277 20.7754C19.0861 22.8708 19.865 24.7417 21.1672 24.9544C22.4694 25.167 23.8026 23.6426 24.1467 21.5471L19.4277 20.7754Z"
         stroke="#1C1D1D"
-        stroke-width="1.5"
-        stroke-linejoin="round"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
       />
     </g>
     <defs>

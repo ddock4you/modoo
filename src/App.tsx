@@ -6,6 +6,8 @@ import { QueryProvider } from "./lib/query/QueryProvider";
 import { StorageProvider } from "./lib/storage/StorageProvider";
 import { MediaProvider } from "./lib/media/MediaProviders";
 import { WeatherProvider } from "./lib/weather/WeatherProvider";
+import { AddPlantWizardProvider } from "./lib/plants/AddPlantWizardContext";
+import { AddPlantWizard } from "./components/add-plant-wizard";
 import "./App.css";
 import Footer from "./components/Footer";
 
@@ -16,14 +18,17 @@ function App() {
         <MediaProvider>
           <WeatherProvider>
             <MobileGuard>
-              <div className="bg-gray-200">
-                <div className="min-h-screen mx-auto max-w-2xl relative bg-white">
-                  <Header />
-                  <Outlet />
-                  <Footer />
-                  <MobileNavigation />
+              <AddPlantWizardProvider>
+                <div className="bg-gray-200">
+                  <div className="min-h-screen mx-auto max-w-2xl relative bg-white">
+                    <Header />
+                    <Outlet />
+                    <Footer />
+                    <MobileNavigation />
+                    <AddPlantWizard />
+                  </div>
                 </div>
-              </div>
+              </AddPlantWizardProvider>
             </MobileGuard>
           </WeatherProvider>
         </MediaProvider>
