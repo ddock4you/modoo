@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import clsx from "clsx";
 import { Button } from "./ui/button";
 import type { Plant } from "../domain/types";
@@ -13,6 +14,12 @@ interface PlantsListProps {
   gridColumns?: number | null;
   direction?: "horizontal" | "vertical";
   maxItems?: number;
+  // 무한 스크롤 관련 props
+  enableInfiniteScroll?: boolean;
+  pageSize?: number;
+  onLoadMore?: () => void;
+  hasNextPage?: boolean;
+  isLoadingMore?: boolean;
 }
 
 function PlantsListError({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
@@ -64,6 +71,17 @@ function PlantsListLoading({
   );
 }
 
+function PlantsListLoadingMore() {
+  return (
+    <div className="flex justify-center py-4">
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <div className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin"></div>
+        <span>더 불러오는 중...</span>
+      </div>
+    </div>
+  );
+}
+
 function PlantsListEmpty() {
   return (
     <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-6 text-center text-sm text-muted-foreground">
@@ -81,33 +99,82 @@ function PlantsListContent({
   direction,
   maxItems,
   renderPlantAction,
+  enableInfiniteScroll,
+  onLoadMore,
+  hasNextPage,
+  isLoadingMore,
 }: {
   plants: Plant[];
   gridColumns?: number | null;
   direction?: "horizontal" | "vertical";
   maxItems?: number;
   renderPlantAction?: (plant: Plant) => ReactNode;
+  enableInfiniteScroll?: boolean;
+  onLoadMore?: () => void;
+  hasNextPage?: boolean;
+  isLoadingMore?: boolean;
 }) {
   const displayPlants = maxItems ? plants.slice(0, maxItems) : plants;
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  const lastItemRef = useCallback(
+    (node: HTMLDivElement) => {
+      if (!enableInfiniteScroll || !hasNextPage || isLoadingMore) return;
+
+      if (observerTarget.current) {
+        observerTarget.current.disconnect();
+      }
+
+      observerTarget.current = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasNextPage && !isLoadingMore) {
+            onLoadMore?.();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (node) {
+        observerTarget.current.observe(node);
+      }
+    },
+    [enableInfiniteScroll, hasNextPage, isLoadingMore, onLoadMore]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (observerTarget.current) {
+        observerTarget.current.disconnect();
+      }
+    };
+  }, []);
 
   return (
-    <div
-      className={clsx("gap-5 pb-2", {
-        grid: gridColumns,
-        "flex snap-x w-full overflow-x-auto": !gridColumns,
-        [`grid-cols-${gridColumns}`]: gridColumns,
-      })}
-    >
-      {displayPlants.map((plant) => (
-        <PlantCard
-          key={plant.id}
-          plant={plant}
-          footer={renderPlantAction?.(plant)}
-          direction={direction}
-          gridColumns={gridColumns}
-        />
-      ))}
-    </div>
+    <>
+      <div
+        className={clsx("gap-5 pb-2", {
+          grid: gridColumns,
+          "flex snap-x w-full overflow-x-auto": !gridColumns,
+          [`grid-cols-${gridColumns}`]: gridColumns,
+        })}
+      >
+        {displayPlants.map((plant, index) => {
+          const isLastItem = index === displayPlants.length - 1;
+          return (
+            <div key={plant.id} ref={isLastItem ? lastItemRef : undefined}>
+              <PlantCard
+                plant={plant}
+                footer={renderPlantAction?.(plant)}
+                direction={direction}
+                gridColumns={gridColumns}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {enableInfiniteScroll && isLoadingMore && <PlantsListLoadingMore />}
+    </>
   );
 }
 
@@ -120,6 +187,11 @@ export default function PlantsList({
   gridColumns,
   direction,
   maxItems,
+  enableInfiniteScroll,
+  pageSize,
+  onLoadMore,
+  hasNextPage,
+  isLoadingMore,
 }: PlantsListProps) {
   if (error) {
     return <PlantsListError error={error} onRetry={onRetry} />;
@@ -142,6 +214,10 @@ export default function PlantsList({
       direction={direction}
       maxItems={maxItems}
       renderPlantAction={renderPlantAction}
+      enableInfiniteScroll={enableInfiniteScroll}
+      onLoadMore={onLoadMore}
+      hasNextPage={hasNextPage}
+      isLoadingMore={isLoadingMore}
     />
   );
 }

@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useEffect, useState, useRef } from "react";
 import clsx from "clsx";
 import PlantBadge from "./PlantBadge";
 import PlantStats from "./PlantStats";
+import { useMedia } from "../lib/media/useMedia";
 import type { Plant } from "../domain/types";
 
 type AlertTone = "danger" | "warning" | "accent";
@@ -63,7 +65,7 @@ function PlantCardSkeleton({
         "w-[33vw] flex-col": !gridColumns && !isHorizontal,
       })}
     >
-      <div className="relative overflow-hidden rounded-lg mb-5">
+      <div className="relative overflow-hidden rounded-lg mb-4">
         <div
           className={clsx("bg-gray-200 animate-pulse", {
             "w-24 h-24 shrink-0": isHorizontal,
@@ -83,7 +85,7 @@ function PlantCardSkeleton({
         </div>
       </div>
 
-      {footer && <div className="border-t border-white/5 px-4 py-3">{footer}</div>}
+      {footer && <div className="">{footer}</div>}
     </article>
   );
 }
@@ -98,7 +100,55 @@ function PlantCardContent({
 }: PlantCardContentProps) {
   const isHorizontal = direction === "horizontal";
   const alertInfo = alertInfoByPlant(plant);
-  const coverPhoto = plant.coverPhotoUri || placeholderImage;
+  const media = useMedia();
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
+  const prevUrlRef = useRef<string | null>(null);
+
+  // 대표 사진 URL 가져오기
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPhotoUrl = async () => {
+      if (!plant.coverPhotoUri || !media) {
+        setCoverPhotoUrl(null);
+        return;
+      }
+
+      try {
+        const url = await media.getThumbnailUrl(plant.coverPhotoUri);
+        if (isMounted) {
+          // 이전 URL 정리
+          if (prevUrlRef.current?.startsWith("blob:")) {
+            URL.revokeObjectURL(prevUrlRef.current);
+          }
+          prevUrlRef.current = url;
+          setCoverPhotoUrl(url);
+        }
+      } catch (error) {
+        console.warn("Failed to load plant photo:", error);
+        if (isMounted) {
+          setCoverPhotoUrl(null);
+        }
+      }
+    };
+
+    loadPhotoUrl();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [plant.coverPhotoUri, media]);
+
+  // 컴포넌트 언마운트 시 Blob URL 정리
+  useEffect(() => {
+    return () => {
+      if (prevUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(prevUrlRef.current);
+      }
+    };
+  }, []);
+
+  const coverPhoto = coverPhotoUrl || placeholderImage;
 
   return (
     <article
@@ -108,7 +158,7 @@ function PlantCardContent({
         "w-[33vw] flex-col": !gridColumns && !isHorizontal,
       })}
     >
-      <div className="relative overflow-hidden rounded-lg mb-5">
+      <div className="relative overflow-hidden rounded-lg mb-4">
         <img
           src={coverPhoto}
           alt={`${plant.name} 대표 사진`}
@@ -124,8 +174,8 @@ function PlantCardContent({
       </div>
 
       {to ? (
-        <Link to={to} className="flex-1">
-          <p className="text-lg font-bold text-[#3A3431] mb-4">{plant.name}</p>
+        <Link to={to} className="flex-1 mb-3">
+          <p className="text-lg font-bold text-[#3A3431] mb-2">{plant.name}</p>
           {/* <p className="text-[11px] text-muted-foreground">
               등록일 {new Date(plant.adoptedAt).toLocaleDateString("ko-KR")}
             </p> */}
@@ -133,7 +183,7 @@ function PlantCardContent({
         </Link>
       ) : (
         <div className="flex-1">
-          <p className="text-lg font-bold text-[#3A3431] mb-4">{plant.name}</p>
+          <p className="text-lg font-bold text-[#3A3431] mb-2">{plant.name}</p>
           {/* <p className="text-[11px] text-muted-foreground">
               등록일 {new Date(plant.adoptedAt).toLocaleDateString("ko-KR")}
             </p> */}
@@ -141,7 +191,7 @@ function PlantCardContent({
         </div>
       )}
 
-      {footer && <div className="border-t border-white/5 px-4 py-3">{footer}</div>}
+      {footer && <div className="">{footer}</div>}
     </article>
   );
 }

@@ -10,3 +10,4 @@ export { Watering } from "./Watering";
 export { WaterDrop3 } from "./WaterDrop3";
 export { Sun } from "./Sun";
 export { SymbolTriangle } from "./SymbolTriangle";
+export { Flowerpot } from "./Flowerpot";

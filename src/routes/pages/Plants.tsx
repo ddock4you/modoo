@@ -1,72 +1,48 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/useStorage";
-import { Button } from "../../components/ui/button";
-import PlantsList from "../../components/PlantsList";
-import { type Plant } from "../../domain/types";
-import { useAddPlantWizard } from "../../lib/plants/AddPlantWizardContext";
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { PlantsTab } from "../../components/plants";
 
 export function Plants() {
-  const storage = useStorage();
-  const queryClient = useQueryClient();
-  const { open } = useAddPlantWizard();
+  const [activeTab, setActiveTab] = useState("plants");
 
-  // 식물 목록 조회
-  const {
-    data: plants = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["plants"],
-    queryFn: () => storage.listPlants(),
-  });
-
-  // 식물 삭제 mutation
-  const deletePlantMutation = useMutation({
-    mutationFn: (id: string) => storage.deletePlant(id),
-    onSuccess: (_, deletedId) => {
-      // 캐시 직접 업데이트: 삭제된 식물을 목록에서 제거
-      queryClient.setQueryData(["plants"], (oldPlants: Plant[] = []) => {
-        return oldPlants.filter((plant) => plant.id !== deletedId);
-      });
-    },
-    onError: () => {
-      alert("식물 삭제에 실패했습니다. 다시 시도해주세요.");
-    },
-  });
-
-  const handleDeletePlant = (id: string) => {
-    if (confirm("정말로 이 식물을 삭제하시겠습니까?")) {
-      deletePlantMutation.mutate(id);
-    }
-  };
+  const tabs = [
+    { value: "plants", label: "내 화분 목록" },
+    { value: "watering", label: "물주기 기록" },
+  ];
 
   return (
-    <div className="bg-background text-foreground p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-semibold">Plants</h1>
-        <Button onClick={() => open(1)} size="sm">
-          새 식물 추가
-        </Button>
-      </div>
+    <div className="bg-background text-foreground">
+      <div className="mb-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 border-b border-[#76716F]">
+            {tabs.map((tab) => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                <span
+                  className={`inline-flex px-2 py-4 translate-y-0.5 ${
+                    activeTab === tab.value ? "text-[#00A576] border-b-4 border-[#00A576]" : ""
+                  }`}
+                >
+                  {tab.label}
+                </span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
-      <PlantsList
-        plants={plants}
-        isLoading={isLoading}
-        error={error}
-        onRetry={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
-        gridColumns={3}
-        renderPlantAction={(plant) => (
-          <Button
-            onClick={() => handleDeletePlant(plant.id)}
-            disabled={deletePlantMutation.isPending}
-            variant="outline"
-            size="sm"
-            className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-          >
-            삭제
-          </Button>
-        )}
-      />
+          <TabsContent value="plants" className="mt-6 p-6">
+            <PlantsTab />
+          </TabsContent>
+
+          <TabsContent value="watering" className="mt-6 p-6">
+            {/* 물주기 기록 탭 - 추후 구현 */}
+            <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-8 text-center">
+              <p className="text-lg font-semibold text-white mb-2">물주기 기록</p>
+              <p className="text-sm text-muted-foreground">
+                물주기 기록 기능을 곧 만나보실 수 있어요.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
