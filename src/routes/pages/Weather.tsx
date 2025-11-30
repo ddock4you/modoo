@@ -1,45 +1,54 @@
-import { Link } from "react-router-dom";
-import { ChevronLeft, Wifi, WifiOff, AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { useWeather, useWeatherFormat, useWeatherIcon } from "../../lib/weather/useWeather";
-import { HourlyChart } from "../../components/weather/charts/HourlyChart";
-import { HumidityChart } from "../../components/weather/charts/HumidityChart";
 import { DailyList } from "../../components/weather/lists/DailyList";
+import { LocationSection } from "@/components/dashboard-visual/LocationSection";
+import { useLocationSearch } from "@/lib/weather/useLocationSearch";
+import { WeatherWidget } from "@/components/weather/widget/WeatherWidget";
 
-function WeatherHeader() {
-  const { location, isOnline } = useWeather();
-  const { formatTime } = useWeatherFormat();
+// 대기질 등급에 따른 색상 컴포넌트
+function AirQualityBadge({ grade }: { grade: string }) {
+  const getColorClass = (grade: string) => {
+    switch (grade) {
+      case "좋음":
+        return "bg-[#06AC7D]";
+      case "보통":
+        return "bg-yellow-500";
+      case "나쁨":
+        return "bg-orange-500";
+      case "매우나쁨":
+        return "bg-red-500";
+      default:
+        return "bg-gray-400";
+    }
+  };
 
   return (
-    <header className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="p-2 -m-2 text-gray-600 hover:text-gray-900 transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">날씨</h1>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>{location?.name || "위치 정보 없음"}</span>
-              <div className="flex items-center gap-1">
-                {isOnline ? (
-                  <Wifi className="w-3 h-3 text-green-500" />
-                ) : (
-                  <WifiOff className="w-3 h-3 text-red-500" />
-                )}
-                <span className="text-xs">{formatTime(Date.now())}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={() => window.location.reload()}
-          className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
-          title="새로고침"
-        >
-          <RefreshCw className="w-5 h-5" />
-        </button>
-      </div>
-    </header>
+    <span className={`px-2 py-1 rounded-sm text-white text-sm ${getColorClass(grade)}`}>
+      {grade}
+    </span>
+  );
+}
+
+function WeatherHeader() {
+  const { location } = useWeather();
+  const {
+    searchLocation,
+    isLoading: isLocating,
+    error: locationError,
+  } = useLocationSearch({
+    updateWeatherLocation: true,
+    autoClearError: true,
+    errorClearDelay: 5000,
+  });
+  return (
+    <div className="flex w-full justify-center">
+      <LocationSection
+        locationName={location?.name}
+        isLocating={isLocating}
+        locationError={locationError}
+        onSearchLocation={searchLocation}
+      />
+    </div>
   );
 }
 
@@ -59,25 +68,34 @@ function WeatherKPIs() {
       </div>
     );
   }
-
+  console.log({ airQuality });
   return (
-    <div className="grid grid-cols-3 gap-4 p-4">
-      <div className="bg-blue-50 rounded-lg p-3">
-        <div className="text-sm text-blue-600 font-medium mb-1">습도</div>
-        <div className="text-lg font-semibold text-blue-900">
-          {formatHumidity(now?.humidityPct)}
+    <div className="grid grid-cols-4 gap-4 mb-12">
+      <div className="bg-[#E6FCF1] rounded-sm py-4 px-1 text-[#4E4946]">
+        <div className="text-center text-sm font-medium mb-1">습도</div>
+        <div className="text-center font-bold">{formatHumidity(now?.humidityPct)}</div>
+        <div className="flex justify-center">
+          <span className="px-2 py-1 rounded-sm text-white text-sm bg-[#06AC7D]">aa</span>
         </div>
       </div>
 
-      <div className="bg-green-50 rounded-lg p-3">
-        <div className="text-sm text-green-600 font-medium mb-1">바람</div>
-        <div className="text-lg font-semibold text-green-900">{formatWindSpeed(now?.windMs)}</div>
+      <div className="bg-[#FFEBD4] rounded-sm py-4 px-1 text-[#4E4946]">
+        <div className="text-center text-sm font-medium mb-1">바람</div>
+        <div className="text-center font-bold">{formatWindSpeed(now?.windMs)}</div>
       </div>
 
-      <div className="bg-purple-50 rounded-lg p-3">
-        <div className="text-sm text-purple-600 font-medium mb-1">대기질</div>
-        <div className="text-lg font-semibold text-purple-900">
-          {formatAirQuality(airQuality?.aqiKorea)}
+      <div className="bg-[#FFEAE5] rounded-sm py-4 px-1 text-[#4E4946]">
+        <div className="text-center text-sm font-medium mb-1">미세먼지</div>
+        <div className="text-center font-bold">{airQuality?.pm10} µg/m³</div>
+        <div className="text-center mt-1">
+          <AirQualityBadge grade={formatAirQuality("pm10", airQuality?.pm10)} />
+        </div>
+      </div>
+      <div className="bg-[#FFEAE5] rounded-sm py-4 px-1 text-[#4E4946]">
+        <div className="text-center text-sm font-medium mb-1">초미세먼지</div>
+        <div className="text-center font-bold">{airQuality?.pm25} µg/m³</div>
+        <div className="text-center mt-1">
+          <AirQualityBadge grade={formatAirQuality("pm25", airQuality?.pm25)} />
         </div>
       </div>
     </div>
@@ -121,14 +139,8 @@ function CurrentWeatherCard() {
   const conditionText = getConditionText(now?.weatherCode?.pty, now?.weatherCode?.sky);
 
   return (
-    <div className="mx-4 mb-6 bg-white rounded-xl p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">현재 날씨</p>
-          <p className="text-3xl font-bold text-gray-900 mb-1">{formatTemperature(now?.tempC)}</p>
-          <p className="text-gray-600">{conditionText}</p>
-        </div>
-
+    <div className="mb-7">
+      <div className="flex items-center justify-center gap-5">
         {/* 날씨 아이콘 - 임시로 텍스트로 표시 */}
         <div className="text-6xl">
           {iconName === "sun" && "☀️"}
@@ -137,61 +149,25 @@ function CurrentWeatherCard() {
           {iconName === "cloud-snow" && "❄️"}
           {!["sun", "cloud", "cloud-rain", "cloud-snow"].includes(iconName) && "☀️"}
         </div>
+        <div>
+          <p className="text-4xl font-black text-[#3A3431]">{formatTemperature(now?.tempC)}</p>
+          <p className="text-gray-600">
+            <span className="after:content['|'] after:mx-1 after:text-sm after:text-[#615D5A]">
+              {conditionText}
+            </span>
+            <span>어제보다 1도 높아요</span>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
 
 function WeatherCharts() {
-  const { hourly, daily } = useWeather();
-  const { getIconName } = useWeatherIcon();
+  const { daily } = useWeather();
 
   return (
-    <div className="px-4 space-y-6">
-      {/* 24시간 시간별 날씨 예보 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">24시간 예보</h3>
-
-        {/* 시간대별 날씨 차트 */}
-        {(hourly || []).length > 0 && (
-          <div className="mb-4">
-            <HourlyChart
-              points={hourly ?? []}
-              height={120}
-              showTemperature={true}
-              showHumidity={false}
-              showPrecipitation={true}
-            />
-          </div>
-        )}
-
-        {/* 시간대별 날씨 아이콘 그리드 */}
-        {(hourly || []).length > 0 && (
-          <div className="grid grid-cols-8 gap-1 text-center">
-            {(hourly || []).slice(0, 24).map((point, i) => {
-              const time = new Date(point.time);
-              const hour = time.getHours();
-              const iconName = getIconName(point.pty, point.sky);
-
-              return (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="text-lg">
-                    {iconName === "sun" && "☀️"}
-                    {iconName === "cloud" && "☁️"}
-                    {iconName === "cloud-rain" && "🌧️"}
-                    {iconName === "cloud-snow" && "❄️"}
-                    {iconName === "moon" && "🌙"}
-                    {iconName === "cloud-moon" && "☁️"}
-                    {!iconName && "☀️"}
-                  </div>
-                  <div className="text-[10px] text-gray-500">{i === 0 ? "지금" : `${hour}시`}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
+    <div className="">
       {/* 7일 일별 날씨 예보 */}
       <div className="bg-white rounded-xl p-4 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">7일 예보</h3>
@@ -203,104 +179,20 @@ function WeatherCharts() {
           showHumidity={false}
         />
       </div>
-
-      {/* 24시간 습도 추이 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">습도 추이</h3>
-
-        {/* 습도 차트 */}
-        {(hourly || []).length > 0 && (
-          <div className="mb-4">
-            <HumidityChart points={hourly ?? []} height={120} showOptimalRange={true} />
-          </div>
-        )}
-
-        {/* 시간대별 습도 아이콘 그리드 */}
-        {(hourly || []).length > 0 && (
-          <div className="grid grid-cols-8 gap-1 text-center">
-            {(hourly || []).slice(0, 24).map((point, i) => {
-              const time = new Date(point.time);
-              const hour = time.getHours();
-              const humidity = point.humidityPct ?? 50;
-
-              // 습도에 따른 아이콘 선택
-              let humidityIcon = "💧"; // 기본
-              if (humidity >= 70) humidityIcon = "💦"; // 높음
-              else if (humidity >= 50) humidityIcon = "💧"; // 적정
-              else if (humidity >= 30) humidityIcon = "🌫️"; // 낮음
-              else humidityIcon = "🏜️"; // 매우 낮음
-
-              return (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="text-lg">{humidityIcon}</div>
-                  <div className="text-[10px] text-gray-500">{humidity}%</div>
-                  <div className="text-[10px] text-gray-500">{i === 0 ? "지금" : `${hour}시`}</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
 
-function WeatherStatusCard() {
-  const { isOnline, error, hasData } = useWeather();
-
-  if (!isOnline) {
-    return (
-      <div className="mx-4 mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <WifiOff className="w-5 h-5 text-yellow-600" />
-          <div>
-            <p className="font-medium text-yellow-900">오프라인 상태</p>
-            <p className="text-sm text-yellow-700">네트워크 연결을 확인해주세요</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="mx-4 mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600" />
-          <div>
-            <p className="font-medium text-red-900">데이터 로드 실패</p>
-            <p className="text-sm text-red-700">{error.message}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!hasData) {
-    return (
-      <div className="mx-4 mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-        <div className="flex items-center gap-3">
-          <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
-          <div>
-            <p className="font-medium text-blue-900">데이터 로딩 중</p>
-            <p className="text-sm text-blue-700">날씨 정보를 불러오고 있습니다</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return null;
-}
-
 export function Weather() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <WeatherHeader />
+    <div className="min-h-screen px-6 pt-7">
+      <div className="mb-5">
+        <WeatherHeader />
+      </div>
       <main className="pb-6">
-        <WeatherStatusCard />
         <CurrentWeatherCard />
         <WeatherKPIs />
+        <WeatherWidget />
         <WeatherCharts />
       </main>
     </div>

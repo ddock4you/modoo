@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
-import { MobileNavigation } from "../../components/mobile-navigation";
 import { WeatherWidget } from "../../components/weather/widget/WeatherWidget";
 import { VisualSection } from "../../components/dashboard-visual/VisualSection";
 import { RecommendedWateringSchedule } from "../../components/watering-schedule";

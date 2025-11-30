@@ -20,7 +20,7 @@ export function LocationSection({
 }: LocationSectionProps) {
   return (
     <>
-      <div className="flex items-center gap-1 mb-3">
+      <div className="flex items-center gap-1">
         <Button
           variant="ghost"
           size="icon"

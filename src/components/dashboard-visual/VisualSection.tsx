@@ -158,13 +158,14 @@ export function VisualSection() {
     >
       <div className="relative flex flex-col items-center">
         {/* 위치 정보 섹션 */}
-        <LocationSection
-          locationName={weatherSummary.location?.name}
-          isLocating={isLocating}
-          locationError={locationError}
-          onSearchLocation={searchLocation}
-        />
-
+        <div className="md-3">
+          <LocationSection
+            locationName={weatherSummary.location?.name}
+            isLocating={isLocating}
+            locationError={locationError}
+            onSearchLocation={searchLocation}
+          />
+        </div>
         {/* 메인 메시지 섹션 */}
         <MainMessageSection message={mainMessage} />
 

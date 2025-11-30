@@ -223,9 +223,23 @@ export function useWeatherFormat() {
     return `${speed.toFixed(1)}m/s`;
   };
 
-  const formatAirQuality = (grade?: string): string => {
-    if (!grade) return "--";
-    return grade;
+  const formatAirQuality = (unit?: "pm10" | "pm25", value?: number | null): string => {
+    if (!unit || !value) return "--";
+    console.log({ unit, value });
+    switch (unit) {
+      case "pm10":
+        if (value < 30) return "좋음";
+        if (value < 80) return "보통";
+        if (value < 150) return "나쁨";
+        return "매우나쁨";
+      case "pm25":
+        if (value < 15) return "좋음";
+        if (value < 35) return "보통";
+        if (value < 75) return "나쁨";
+        return "매우나쁨";
+      default:
+        return "--";
+    }
   };
 
   const formatTime = (timestamp?: number): string => {
