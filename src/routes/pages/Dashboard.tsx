@@ -1,11 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/useStorage";
 import { Link } from "react-router-dom";
-import { WeatherWidget } from "../../components/weather/widget/WeatherWidget";
-import { VisualSection } from "../../components/dashboard-visual/VisualSection";
-import { RecommendedWateringSchedule } from "../../components/watering-schedule";
-import PlantsList from "../../components/PlantsList";
 import { ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useStorage } from "@/lib/storage/useStorage";
+import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidget";
+import { VisualSection } from "@/components/dashboard-visual/VisualSection";
+import { RecommendedWateringSchedule } from "@/features/plants/components/watering-schedule/RecommendedWateringSchedule";
+import PlantsList from "@/features/plants/components/PlantsList";
 
 export function Dashboard() {
   const storage = useStorage();

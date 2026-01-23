@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { PlantsTab } from "../../components/plants";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PlantsTab } from "@/features/plants/components/PlantsTab";
 
 export function Plants() {
   const [activeTab, setActiveTab] = useState("plants");

@@ -7,7 +7,7 @@ import { StorageProvider } from "./lib/storage/StorageProvider";
 import { MediaProvider } from "./lib/media/MediaProviders";
 import { WeatherProvider } from "./lib/weather/WeatherProvider";
 import { AddPlantWizardProvider } from "./lib/plants/AddPlantWizardContext";
-import { AddPlantWizard } from "./components/add-plant-wizard";
+import { AddPlantWizard } from "@/features/add-plant-wizard/components/AddPlantWizard";
 import "./App.css";
 import Footer from "./components/Footer";
 

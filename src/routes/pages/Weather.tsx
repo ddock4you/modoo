@@ -4,12 +4,12 @@ import {
   useWeatherFormat,
   useWeatherIcon,
   useYesterdayTemperatureComparison,
-} from "../../lib/weather/useWeather";
-import { DailyList } from "../../components/weather/lists/DailyList";
+} from "@/features/weather/hooks/useWeather";
+import { DailyList } from "@/features/weather/components/lists/DailyList";
 import { LocationSection } from "@/components/dashboard-visual/LocationSection";
-import { useLocationSearch } from "@/lib/weather/useLocationSearch";
-import { WeatherWidget } from "@/components/weather/widget/WeatherWidget";
-import { AirQualityBadge } from "@/components/weather/badges/AirQualityBadge";
+import { useLocationSearch } from "@/features/weather/hooks/useLocationSearch";
+import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidget";
+import { AirQualityBadge } from "@/features/weather/components/badges/AirQualityBadge";
 
 function WeatherHeader() {
   const { location } = useWeather();

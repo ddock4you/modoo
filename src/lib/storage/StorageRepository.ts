@@ -1,3 +1,10 @@
+import {
+  calculatePlantStatus,
+  calculateAllPlantsStatus,
+  calculatePlantsStatusStats,
+} from "@/domain";
+import type { ModooDB } from "./db";
+import type { IDBPDatabase } from "idb";
 import type {
   Plant,
   PlantStatusInfo,
@@ -5,14 +12,7 @@ import type {
   TaskEvent,
   TaskRule,
   PhotoMeta,
-} from "../../domain/types";
-import type { ModooDB } from "./db";
-import type { IDBPDatabase } from "idb";
-import {
-  calculatePlantStatus,
-  calculateAllPlantsStatus,
-  calculatePlantsStatusStats,
-} from "../../domain/use-cases/calculatePlantStatus";
+} from "@/domain/types";
 
 export interface StorageRepository {
   // Plants

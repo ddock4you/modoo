@@ -1,9 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "../../lib/storage/useStorage";
-import { usePlantsStatusStats, getStatusLabel } from "../../lib/storage/usePlantStatus";
-import { useWeatherSummary, useWeatherFormat } from "../../lib/weather/useWeather";
-import { useLocationSearch } from "../../lib/weather/useLocationSearch";
-import visualFlowerImage from "../../assets/images/visual_flower.png";
+import { useStorage } from "@/lib/storage/useStorage";
+import {
+  usePlantsStatusStats,
+  getStatusLabel,
+} from "@/features/plants/hooks/usePlantStatus";
+import { useWeatherSummary, useWeatherFormat } from "@/features/weather/hooks/useWeather";
+import { useLocationSearch } from "@/features/weather/hooks/useLocationSearch";
+import visualFlowerImage from "@/assets/images/visual_flower.png";
 import { LocationSection } from "./LocationSection";
 import { MainMessageSection } from "./MainMessageSection";
 import { DonutChartSection } from "./DonutChartSection";

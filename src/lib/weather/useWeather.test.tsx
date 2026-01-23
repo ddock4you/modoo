@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WeatherProvider } from "./WeatherProvider";
+import { WeatherProvider } from "@/lib/weather/WeatherProvider";
 import {
   useWeather,
   useCurrentWeather,
@@ -12,7 +12,7 @@ import {
   useWeatherLocation,
   useWeatherIcon,
   useWeatherFormat,
-} from "./useWeather";
+} from "@/features/weather/hooks/useWeather";
 
 // 모킹 설정 - setup.ts에서 이미 설정됨
 

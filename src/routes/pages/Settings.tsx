@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { BackupDialog, RestoreDialog } from "../../components/backup";
-import { MobileNavigation } from "../../components/mobile-navigation";
-import { Button } from "../../components/ui/button";
+import { BackupDialog } from "@/features/backup/components/BackupDialog";
+import { RestoreDialog } from "@/features/backup/components/RestoreDialog";
+import { Button } from "@/components/ui/button";
 
 export function Settings() {
   const [showBackupDialog, setShowBackupDialog] = useState(false);

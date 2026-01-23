@@ -5,9 +5,14 @@ import { useStorage } from "../../lib/storage/useStorage";
 import { useMedia } from "../../lib/media/useMedia";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { Button } from "../../components/ui/button";
-import { updateRuleAfterTaskCompletion } from "../../domain/use-cases/calculateNextDue";
-import type { Plant, TaskRule, TaskEvent, PhotoMeta } from "../../domain/types";
-import { generateId } from "../../domain/types";
+import {
+  generateId,
+  type Plant,
+  type TaskRule,
+  type TaskEvent,
+  type PhotoMeta,
+  updateRuleAfterTaskCompletion,
+} from "@/domain";
 
 export function PlantDetail() {
   const { id } = useParams();
