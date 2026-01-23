@@ -257,6 +257,27 @@ export interface ModooDB extends DBSchema {
       byUpdatedAt: number; // 업데이트 시간으로 인덱스
     };
   };
+  // 어제 날씨 시간별 데이터 캐시 (24시간 TTL)
+  weather_yesterday_hourly: {
+    key: [string, number]; // [locationId, baseTime]
+    value: {
+      locationId: string;
+      baseTime: number; // 날짜 문자열을 timestamp로 변환
+      data: Array<{
+        time: string; // ISO
+        tempC: number;
+        humidityPct?: number;
+        precipProbPct?: number;
+        sky?: 1 | 3 | 4;
+        pty?: 0 | 1 | 2 | 3 | 5 | 6 | 7;
+      }>;
+      expiresAt: number; // 캐시 만료 시간
+    };
+    indexes: {
+      byExpiresAt: number; // 만료시간으로 인덱스
+      byLocationId: string; // 위치별 조회용
+    };
+  };
 }
 
 let dbInstance: IDBPDatabase<ModooDB> | null = null;
@@ -264,8 +285,8 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 4로 설정 (날씨 캐시 스토어 추가)
-  dbInstance = await openDB<ModooDB>("modoo", 4, {
+  // 버전 5로 설정 (어제 날씨 시간별 캐시 스토어 추가)
+  dbInstance = await openDB<ModooDB>("modoo", 5, {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     upgrade(db, oldVersion, newVersion, _transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
@@ -369,6 +390,20 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         weatherLocationsStore.createIndex("byUpdatedAt", "updatedAt");
 
         console.log("Successfully upgraded to database version 4");
+      }
+
+      // 버전 5: 어제 날씨 시간별 캐시 스토어 추가
+      if (oldVersion < 5) {
+        console.log("Upgrading to version 5: Adding weather_yesterday_hourly store");
+
+        // Weather Yesterday Hourly store
+        const weatherYesterdayHourlyStore = db.createObjectStore("weather_yesterday_hourly", {
+          keyPath: ["locationId", "baseTime"],
+        });
+        weatherYesterdayHourlyStore.createIndex("byExpiresAt", "expiresAt");
+        weatherYesterdayHourlyStore.createIndex("byLocationId", "locationId");
+
+        console.log("Successfully upgraded to database version 5");
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

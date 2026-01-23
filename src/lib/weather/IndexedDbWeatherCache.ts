@@ -1,4 +1,4 @@
-import { initDB } from "../storage/db";
+import { initDB, type ModooDB } from "../storage/db";
 import type {
   WeatherLocation,
   WeatherNow,
@@ -7,22 +7,6 @@ import type {
   AirQuality,
   WeatherCacheEntry,
 } from "../../domain/types";
-
-// Weather 전용 DB 타입
-export interface WeatherDB {
-  weather_now: WeatherCacheEntry;
-  weather_hourly: WeatherCacheEntry;
-  weather_daily: WeatherCacheEntry;
-  air_quality: WeatherCacheEntry;
-  weather_locations: WeatherLocation;
-  weather_geocoding_cache: {
-    key: string;
-    address: string;
-    lat: number;
-    lon: number;
-    expiresAt: number;
-  };
-}
 
 export interface WeatherCacheResult<T = any> {
   data: T;
@@ -35,7 +19,7 @@ export interface WeatherCacheResult<T = any> {
  * TTL 기반 캐시 관리 및 SWR 패턴을 지원합니다.
  */
 export class IndexedDbWeatherCache {
-  private db: any = null;
+  private db: ModooDB | null = null;
 
   // TTL 설정 (분 단위)
   private readonly TTL_MINUTES = {
@@ -44,13 +28,14 @@ export class IndexedDbWeatherCache {
     shortTermDaily: 6 * 60, // 단기예보 일별: 6시간
     midTermDaily: 12 * 60, // 중기예보 일별: 12시간
     airQuality: 60, // 대기질: 60분
+    yesterdayHourly: 24 * 60, // 어제 시간별: 24시간
   } as const;
 
   // 위치별 최대 보존 일수
   private readonly MAX_DAYS_PER_LOCATION = 7;
 
   async init(): Promise<void> {
-    this.db = (await initDB()) as unknown as WeatherDB;
+    this.db = await initDB();
   }
 
   /**
@@ -111,7 +96,7 @@ export class IndexedDbWeatherCache {
   async getDaily(
     locationId: string,
     baseTime: number,
-    _type: "short" | "mid" = "short" // 현재 구현에서는 사용하지 않음
+    _type?: "short" | "mid" // 현재 구현에서는 사용하지 않음
   ): Promise<WeatherCacheResult<WeatherDailyPoint[]> | null> {
     // type 파라미터는 현재 사용하지 않음
     return this.getCacheEntry("weather_daily", locationId, baseTime);
@@ -165,6 +150,36 @@ export class IndexedDbWeatherCache {
 
     // 위치별 데이터 수 제한
     await this.enforceRetentionLimit("air_quality", locationId);
+  }
+
+  /**
+   * 어제 시간별 날씨 데이터 캐시 조회
+   */
+  async getYesterdayHourly(
+    locationId: string,
+    date: string
+  ): Promise<WeatherCacheResult<WeatherHourlyPoint[]> | null> {
+    return this.getCacheEntry("weather_yesterday_hourly", locationId, date);
+  }
+
+  /**
+   * 어제 시간별 날씨 데이터 캐시 저장
+   */
+  async setYesterdayHourly(
+    locationId: string,
+    date: string,
+    data: WeatherHourlyPoint[]
+  ): Promise<void> {
+    const expiresAt = Date.now() + this.TTL_MINUTES.yesterdayHourly * 60 * 1000;
+    await this.setCacheEntry("weather_yesterday_hourly", {
+      locationId,
+      baseTime: date,
+      data,
+      expiresAt,
+    });
+
+    // 위치별 데이터 수 제한 (어제 데이터만 저장하므로 1개로 제한)
+    await this.enforceRetentionLimit("weather_yesterday_hourly", locationId);
   }
 
   /**
@@ -237,10 +252,15 @@ export class IndexedDbWeatherCache {
    */
   private async enforceRetentionLimit(
     storeName: keyof Pick<
-      WeatherDB,
-      "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
+      ModooDB,
+      | "weather_now"
+      | "weather_hourly"
+      | "weather_daily"
+      | "air_quality"
+      | "weather_yesterday_hourly"
     >,
-    locationId: string
+    locationId: string,
+    _maxCount: number = this.MAX_DAYS_PER_LOCATION
   ): Promise<void> {
     if (!this.db) await this.init();
 
@@ -283,11 +303,15 @@ export class IndexedDbWeatherCache {
    */
   private async getCacheEntry<T>(
     storeName: keyof Pick<
-      WeatherDB,
-      "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
+      ModooDB,
+      | "weather_now"
+      | "weather_hourly"
+      | "weather_daily"
+      | "air_quality"
+      | "weather_yesterday_hourly"
     >,
     locationId: string,
-    baseTime: number
+    baseTime: number | string
   ): Promise<WeatherCacheResult<T> | null> {
     if (!this.db) await this.init();
 
@@ -316,8 +340,12 @@ export class IndexedDbWeatherCache {
    */
   private async setCacheEntry(
     storeName: keyof Pick<
-      WeatherDB,
-      "weather_now" | "weather_hourly" | "weather_daily" | "air_quality"
+      ModooDB,
+      | "weather_now"
+      | "weather_hourly"
+      | "weather_daily"
+      | "air_quality"
+      | "weather_yesterday_hourly"
     >,
     entry: WeatherCacheEntry
   ): Promise<void> {

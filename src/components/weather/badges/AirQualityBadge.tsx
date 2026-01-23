@@ -6,7 +6,8 @@
 import type { AirQuality } from "../../../domain/types";
 
 export interface AirQualityBadgeProps {
-  airQuality: AirQuality | null | undefined;
+  airQuality?: AirQuality | null;
+  grade?: string; // 수동 grade 지정
   showValues?: boolean; // PM10/PM2.5 값 표시 여부
   showStation?: boolean; // 측정소명 표시 여부
   size?: "sm" | "md" | "lg"; // 배지 크기
@@ -14,6 +15,7 @@ export interface AirQualityBadgeProps {
 
 export function AirQualityBadge({
   airQuality,
+  grade,
   showValues = false,
   showStation = false,
   size = "md",
@@ -83,7 +85,7 @@ export function AirQualityBadge({
     }
   };
 
-  if (!airQuality) {
+  if (!airQuality && !grade) {
     const styles = getGradeStyles(undefined);
     const sizeStyles = getSizeStyles(size);
 
@@ -97,9 +99,10 @@ export function AirQualityBadge({
     );
   }
 
-  const grade = airQuality.aqiKorea;
-  const styles = getGradeStyles(grade);
+  const computedGrade = grade ?? airQuality?.aqiKorea;
+  const styles = getGradeStyles(computedGrade);
   const sizeStyles = getSizeStyles(size);
+  const gradeLabel = computedGrade ?? "알수없음";
 
   return (
     <div className={`inline-flex flex-col gap-1`}>
@@ -108,11 +111,11 @@ export function AirQualityBadge({
         className={`inline-flex items-center ${sizeStyles.container} rounded-full border ${styles.bgColor} ${styles.borderColor}`}
       >
         <span className={sizeStyles.icon}>{styles.icon}</span>
-        <span className={`font-medium ${styles.textColor}`}>{grade || "알수없음"}</span>
+        <span className={`font-medium ${styles.textColor}`}>{gradeLabel}</span>
       </div>
 
       {/* 추가 정보 */}
-      {(showValues || showStation) && (
+      {(showValues || showStation) && airQuality && (
         <div className="text-xs text-gray-500 space-y-0.5">
           {showValues && (airQuality.pm10 !== null || airQuality.pm25 !== null) && (
             <div className="flex gap-2">

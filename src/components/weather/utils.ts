@@ -44,6 +44,43 @@ export function calculateTemperatureDiff(
 }
 
 /**
+ * 시간대별 현재 vs 어제 온도 차이 계산 (KST 기준)
+ */
+export function calculateHourlyTemperatureDiff(
+  currentTemp: number,
+  yesterdayHourly: Array<{ time: string; tempC?: number }>,
+  currentTime?: Date
+): number | undefined {
+  if (!yesterdayHourly || yesterdayHourly.length === 0) return undefined;
+
+  // 현재 시간을 KST로 변환
+  const now = currentTime || new Date();
+  const kstTime = new Date(now.getTime() + 9 * 60 * 60 * 1000); // UTC+9
+  const currentHour = kstTime.getHours();
+
+  // 어제 같은 시간대의 데이터 찾기 (가장 가까운 시간대 우선)
+  let closestPoint: { time: string; tempC?: number } | undefined;
+  let minDiff = Infinity;
+
+  for (const point of yesterdayHourly) {
+    const pointTime = new Date(point.time);
+    const pointHour = pointTime.getHours();
+    const hourDiff = Math.abs(currentHour - pointHour);
+
+    if (hourDiff < minDiff && point.tempC !== undefined) {
+      minDiff = hourDiff;
+      closestPoint = point;
+    }
+  }
+
+  if (!closestPoint || closestPoint.tempC === undefined) return undefined;
+
+  // 현재 온도와 어제 같은 시간대 온도의 차이 계산
+  const diff = currentTemp - closestPoint.tempC;
+  return Math.round(diff * 10) / 10; // 소수점 첫째자리까지
+}
+
+/**
  * 쾌적도 계산 (온도/습도 범위 체크)
  */
 export function calculateComfortLevel(

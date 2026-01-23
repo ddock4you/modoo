@@ -208,11 +208,14 @@ export class KmaWeatherProvider {
    * - 이 메서드는 UltraSrtFcst(초단기예보)를 사용하지 않고,
    *   VilageFcst(단기예보)만으로 현재 시각 기준 0~24시간 구간을 구성한다.
    */
-  async getHourlyForecast24h(location: WeatherLocation): Promise<WeatherHourlyPoint[]> {
-    const now = new Date();
+  async getHourlyForecast24h(
+    location: WeatherLocation,
+    date?: string
+  ): Promise<WeatherHourlyPoint[]> {
+    const targetDate = date ? new Date(date + "T00:00:00+09:00") : new Date();
     // VilageFcst(단기예보)는 고정 발표시각(02, 05, 08, 11, 14, 17, 20, 23시)을 사용해야 함
     const { baseDate: vilageBaseDate, baseTime: vilageBaseTime } =
-      this.getBaseTimeForVilageForecast(now);
+      this.getBaseTimeForVilageForecast(targetDate);
 
     // VilageFcst 단기예보 호출 (0~24h 1시간 단위 예보를 단일 소스로 사용)
     const vilageParams = new URLSearchParams({

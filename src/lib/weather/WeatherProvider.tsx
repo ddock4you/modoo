@@ -89,6 +89,39 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
     };
   }, []);
 
+  // 날짜 변경 시점 캐시 무효화 (어제 데이터)
+  useEffect(() => {
+    const checkDateChange = () => {
+      const now = new Date();
+      const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000); // KST 변환
+      const currentDate = kstNow.toISOString().slice(0, 10);
+
+      // 로컬 스토리지에 저장된 마지막 확인 날짜
+      const lastCheckedDate = localStorage.getItem("weather_last_date_check");
+
+      if (lastCheckedDate !== currentDate) {
+        // 날짜가 변경됨 - 어제 데이터 캐시 무효화
+        queryClient
+          .invalidateQueries({
+            queryKey: ["weather", "yesterday"],
+            exact: false,
+          })
+          .catch(console.error);
+
+        // 새로운 날짜 저장
+        localStorage.setItem("weather_last_date_check", currentDate);
+      }
+    };
+
+    // 컴포넌트 마운트 시 즉시 확인
+    checkDateChange();
+
+    // 1분마다 날짜 변경 확인
+    const interval = setInterval(checkDateChange, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
   // GPS 권한 상태 확인
   const checkLocationPermission = useCallback(async () => {
     if (!navigator.permissions) return;

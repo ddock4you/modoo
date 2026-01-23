@@ -1,33 +1,15 @@
 import { AlertCircle } from "lucide-react";
-import { useWeather, useWeatherFormat, useWeatherIcon } from "../../lib/weather/useWeather";
+import {
+  useWeather,
+  useWeatherFormat,
+  useWeatherIcon,
+  useYesterdayTemperatureComparison,
+} from "../../lib/weather/useWeather";
 import { DailyList } from "../../components/weather/lists/DailyList";
 import { LocationSection } from "@/components/dashboard-visual/LocationSection";
 import { useLocationSearch } from "@/lib/weather/useLocationSearch";
 import { WeatherWidget } from "@/components/weather/widget/WeatherWidget";
-
-// 대기질 등급에 따른 색상 컴포넌트
-function AirQualityBadge({ grade }: { grade: string }) {
-  const getColorClass = (grade: string) => {
-    switch (grade) {
-      case "좋음":
-        return "bg-[#06AC7D]";
-      case "보통":
-        return "bg-yellow-500";
-      case "나쁨":
-        return "bg-orange-500";
-      case "매우나쁨":
-        return "bg-red-500";
-      default:
-        return "bg-gray-400";
-    }
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded-sm text-white text-sm ${getColorClass(grade)}`}>
-      {grade}
-    </span>
-  );
-}
+import { AirQualityBadge } from "@/components/weather/badges/AirQualityBadge";
 
 function WeatherHeader() {
   const { location } = useWeather();
@@ -58,8 +40,8 @@ function WeatherKPIs() {
 
   if (nowLoading || airQualityLoading) {
     return (
-      <div className="grid grid-cols-3 gap-4 p-4">
-        {[...Array(3)].map((_, i) => (
+      <div className="grid grid-cols-4 gap-4 p-4">
+        {[...Array(4)].map((_, i) => (
           <div key={i} className="bg-gray-50 rounded-lg p-3 animate-pulse">
             <div className="h-4 bg-gray-200 rounded mb-2"></div>
             <div className="h-6 bg-gray-200 rounded"></div>
@@ -68,15 +50,20 @@ function WeatherKPIs() {
       </div>
     );
   }
-  console.log({ airQuality });
+
+  const formatParticle = (value?: number | null) =>
+    value !== undefined && value !== null ? `${value} µg/m³` : "측정중";
+
+  const pm10Display = formatParticle(airQuality?.pm10);
+  const pm25Display = formatParticle(airQuality?.pm25);
+  const pm10Grade = formatAirQuality("pm10", airQuality?.pm10);
+  const pm25Grade = formatAirQuality("pm25", airQuality?.pm25);
+
   return (
     <div className="grid grid-cols-4 gap-4 mb-12">
       <div className="bg-[#E6FCF1] rounded-sm py-4 px-1 text-[#4E4946]">
         <div className="text-center text-sm font-medium mb-1">습도</div>
         <div className="text-center font-bold">{formatHumidity(now?.humidityPct)}</div>
-        <div className="flex justify-center">
-          <span className="px-2 py-1 rounded-sm text-white text-sm bg-[#06AC7D]">aa</span>
-        </div>
       </div>
 
       <div className="bg-[#FFEBD4] rounded-sm py-4 px-1 text-[#4E4946]">
@@ -86,16 +73,16 @@ function WeatherKPIs() {
 
       <div className="bg-[#FFEAE5] rounded-sm py-4 px-1 text-[#4E4946]">
         <div className="text-center text-sm font-medium mb-1">미세먼지</div>
-        <div className="text-center font-bold">{airQuality?.pm10} µg/m³</div>
+        <div className="text-center font-bold">{pm10Display}</div>
         <div className="text-center mt-1">
-          <AirQualityBadge grade={formatAirQuality("pm10", airQuality?.pm10)} />
+          <AirQualityBadge grade={pm10Grade} size="sm" />
         </div>
       </div>
       <div className="bg-[#FFEAE5] rounded-sm py-4 px-1 text-[#4E4946]">
         <div className="text-center text-sm font-medium mb-1">초미세먼지</div>
-        <div className="text-center font-bold">{airQuality?.pm25} µg/m³</div>
+        <div className="text-center font-bold">{pm25Display}</div>
         <div className="text-center mt-1">
-          <AirQualityBadge grade={formatAirQuality("pm25", airQuality?.pm25)} />
+          <AirQualityBadge grade={pm25Grade} size="sm" />
         </div>
       </div>
     </div>
@@ -106,6 +93,7 @@ function CurrentWeatherCard() {
   const { now, nowLoading, isOnline } = useWeather();
   const { formatTemperature } = useWeatherFormat();
   const { getIconName, getConditionText } = useWeatherIcon();
+  const { diff: tempDiff, isLoading: tempDiffLoading } = useYesterdayTemperatureComparison();
 
   if (nowLoading) {
     return (
@@ -122,13 +110,17 @@ function CurrentWeatherCard() {
     );
   }
 
-  if (!now && isOnline) {
+  if (!now) {
+    const message = isOnline
+      ? "날씨 정보를 불러올 수 없습니다"
+      : "오프라인 중입니다. 마지막으로 캐시된 데이터를 확인하세요";
+
     return (
       <div className="mx-4 mb-6 bg-white rounded-xl p-6 shadow-sm">
         <div className="flex items-center justify-center py-8">
           <div className="text-center">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-600">날씨 정보를 불러올 수 없습니다</p>
+            <p className="text-gray-600">{message}</p>
           </div>
         </div>
       </div>
@@ -155,7 +147,15 @@ function CurrentWeatherCard() {
             <span className="after:content['|'] after:mx-1 after:text-sm after:text-[#615D5A]">
               {conditionText}
             </span>
-            <span>어제보다 1도 높아요</span>
+            <span>
+              {tempDiffLoading
+                ? "어제 데이터 확인중..."
+                : tempDiff !== undefined
+                ? `어제보다 ${Math.abs(tempDiff)}° ${
+                    tempDiff > 0 ? "높음" : tempDiff < 0 ? "낮음" : "같음"
+                  }`
+                : "어제 데이터 준비중"}
+            </span>
           </p>
         </div>
       </div>

@@ -59,6 +59,11 @@ export interface IWeatherRepository {
   getAirQuality(locationId: string): Promise<AirQuality | null>;
 
   /**
+   * 어제 시간별 날씨 데이터 조회 (캐시 우선, 없으면 API 호출)
+   */
+  getYesterdayHourly(locationId: string, date?: string): Promise<WeatherHourlyPoint[] | null>;
+
+  /**
    * 위치 정보 조회 또는 생성 (역지오코딩 포함)
    */
   getOrCreateLocation(lat: number, lon: number): Promise<WeatherLocation>;
@@ -159,6 +164,19 @@ export class WeatherRepository implements IWeatherRepository {
           date.getHours()
         ).getTime();
     }
+  }
+
+  /**
+   * 어제 날짜 문자열 생성 (KST 기준)
+   */
+  private getYesterdayDateString(): string {
+    const now = new Date();
+    // KST로 변환 (UTC+9)
+    const kstOffset = 9 * 60 * 60 * 1000;
+    const kstNow = new Date(now.getTime() + kstOffset);
+    const yesterday = new Date(kstNow);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().slice(0, 10);
   }
 
   /**
@@ -450,6 +468,68 @@ export class WeatherRepository implements IWeatherRepository {
         return cached?.data || null;
       } catch (cacheError) {
         console.error("Failed to get cached air quality:", cacheError);
+        return null;
+      }
+    }
+  }
+
+  /**
+   * 어제 시간별 날씨 데이터 조회 (캐시 우선, 없으면 API 호출)
+   */
+  async getYesterdayHourly(
+    locationId: string,
+    date?: string
+  ): Promise<WeatherHourlyPoint[] | null> {
+    await this.init();
+
+    try {
+      // 어제 날짜 계산 (KST 기준)
+      const yesterday = date || this.getYesterdayDateString();
+      const cached = await weatherCache.getYesterdayHourly(locationId, yesterday);
+
+      if (cached && !cached.isStale) {
+        return cached.data;
+      }
+
+      let location = await weatherCache.getLocation(locationId);
+      if (!location) {
+        // 기본 위치인 경우 기본 위치 정보 생성
+        if (locationId === "default") {
+          location = {
+            id: "default",
+            lat: 37.5139,
+            lon: 127.1025,
+            name: "서울 송파구 잠실동",
+            nx: 62,
+            ny: 124,
+            tmX: 961114,
+            tmY: 1946434,
+            timezone: "Asia/Seoul",
+            updatedAt: Date.now(),
+          };
+          // 캐시에 기본 위치 저장
+          await weatherCache.setLocation(location);
+        } else {
+          console.warn(`Location not found for locationId: ${locationId}`);
+          return cached?.data || null;
+        }
+      }
+
+      // 어제 시간별 데이터를 API로 조회
+      const yesterdayHourly = await this.kmaProvider.getHourlyForecast24h(location, yesterday);
+      if (yesterdayHourly) {
+        await weatherCache.setYesterdayHourly(locationId, yesterday, yesterdayHourly);
+      }
+
+      return yesterdayHourly;
+    } catch (error) {
+      console.error("Failed to get yesterday hourly weather:", error);
+      try {
+        const yesterday = date || this.getYesterdayDateString();
+        const cached = await weatherCache.getYesterdayHourly(locationId, yesterday);
+        return cached?.data || null;
+      } catch (cacheError) {
+        console.error("Failed to get cached yesterday hourly weather:", cacheError);
         return null;
       }
     }

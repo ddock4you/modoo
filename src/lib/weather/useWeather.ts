@@ -3,7 +3,9 @@
  * 날씨 데이터 조회를 위한 편리한 API 제공
  */
 
+import { useEffect, useState } from "react";
 import { useWeatherContext } from "./WeatherProvider";
+import { weatherRepository } from "./WeatherRepository";
 
 /**
  * 기본 날씨 데이터 훅
@@ -225,7 +227,6 @@ export function useWeatherFormat() {
 
   const formatAirQuality = (unit?: "pm10" | "pm25", value?: number | null): string => {
     if (!unit || !value) return "--";
-    console.log({ unit, value });
     switch (unit) {
       case "pm10":
         if (value < 30) return "좋음";
@@ -269,4 +270,59 @@ export function useWeatherFormat() {
     formatTime,
     formatDate,
   };
+}
+
+/**
+ * 어제 시간대별 온도 비교 Hook
+ * 현재 날씨와 어제 같은 시간대의 날씨를 비교하여 차이를 반환
+ */
+export function useYesterdayTemperatureComparison() {
+  const { location, now } = useWeather();
+  const [comparison, setComparison] = useState<{
+    diff: number | undefined;
+    isLoading: boolean;
+    error: Error | null;
+  }>({
+    diff: undefined,
+    isLoading: false,
+    error: null,
+  });
+
+  useEffect(() => {
+    if (!location || !now?.tempC) {
+      setComparison({ diff: undefined, isLoading: false, error: null });
+      return;
+    }
+
+    const fetchYesterdayComparison = async () => {
+      setComparison((prev) => ({ ...prev, isLoading: true, error: null }));
+
+      try {
+        // 어제 시간별 데이터 조회
+        const yesterdayData = await weatherRepository.getYesterdayHourly(location.id);
+
+        if (yesterdayData) {
+          // 시간대별 온도 차이 계산
+          const { calculateHourlyTemperatureDiff } = await import("../../components/weather/utils");
+          const diff = calculateHourlyTemperatureDiff(now.tempC, yesterdayData);
+
+          setComparison({ diff, isLoading: false, error: null });
+        } else {
+          // 어제 데이터가 없는 경우 undefined로 설정 (폴백 동작)
+          setComparison({ diff: undefined, isLoading: false, error: null });
+        }
+      } catch (error) {
+        console.error("Failed to fetch yesterday temperature comparison:", error);
+        setComparison({
+          diff: undefined,
+          isLoading: false,
+          error: error instanceof Error ? error : new Error("Unknown error"),
+        });
+      }
+    };
+
+    fetchYesterdayComparison();
+  }, [location?.id, location, now?.tempC]);
+
+  return comparison;
 }
