@@ -114,9 +114,6 @@ interface VilageFcstItem {
   ny: number;
 }
 
-// 그룹화된 데이터 타입 (시간별)
-type HourlyGroupedData = Record<string, Partial<Record<UltraSrtFcstItem["category"], string>>>;
-
 // 그룹화된 데이터 타입 (일별)
 type DailyGroupedData = Record<string, Partial<Record<VilageFcstItem["category"], string>>>;
 
@@ -798,47 +795,65 @@ export class KmaWeatherProvider {
   }
 
   private parseHourlyForecast(items: UltraSrtFcstItem[]): WeatherHourlyPoint[] {
-    // 카테고리별로 그룹화
-    const groupedByTime: HourlyGroupedData = {};
+    // fcstDate/fcstTime(KST)를 기준으로 그룹화
+    const groupedByDateTime: Record<
+      string,
+      { fcstDate: string; fcstTime: string; data: Partial<Record<UltraSrtFcstItem["category"], string>> }
+    > = {};
 
     for (const item of items) {
-      const timeKey = item.fcstTime; // HHMM 형식
-      if (!groupedByTime[timeKey]) {
-        groupedByTime[timeKey] = {};
+      const key = `${item.fcstDate}${item.fcstTime}`;
+      if (!groupedByDateTime[key]) {
+        groupedByDateTime[key] = { fcstDate: item.fcstDate, fcstTime: item.fcstTime, data: {} };
       }
-      groupedByTime[timeKey][item.category] = item.fcstValue;
+      groupedByDateTime[key].data[item.category] = item.fcstValue;
     }
 
-    // 시간순으로 정렬하여 변환
-    const sortedTimes = Object.keys(groupedByTime).sort();
-    const result: WeatherHourlyPoint[] = [];
+    const nowMs = Date.now();
 
-    for (const timeStr of sortedTimes) {
-      const data = groupedByTime[timeStr];
-      const hour = parseInt(timeStr.substring(0, 2));
-      const minute = parseInt(timeStr.substring(2, 4));
+    const pointsWithMs: Array<{ ms: number; point: WeatherHourlyPoint }> = [];
+    for (const grouped of Object.values(groupedByDateTime)) {
+      const ms = this.parseKstForecastMs(grouped.fcstDate, grouped.fcstTime);
+      if (!Number.isFinite(ms) || ms <= nowMs) continue;
 
-      // 현재 시간 기준 미래 데이터만 포함
-      const now = new Date();
-      const forecastTime = new Date(
-        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour, minute)
-      );
-
-      if (forecastTime > now) {
-        const point: WeatherHourlyPoint = {
-          time: forecastTime.toISOString(),
+      const data = grouped.data;
+      pointsWithMs.push({
+        ms,
+        point: {
+          time: new Date(ms).toISOString(),
           tempC: data.T1H ? parseFloat(data.T1H) : 0,
           humidityPct: data.REH ? parseInt(data.REH) : undefined,
           precipProbPct: data.RN1 ? Math.min(parseInt(data.RN1), 100) : undefined,
           sky: data.SKY ? (parseInt(data.SKY) as 1 | 3 | 4) : undefined,
           pty: data.PTY ? (parseInt(data.PTY) as 0 | 1 | 2 | 3 | 5 | 6 | 7) : undefined,
-        };
-
-        result.push(point);
-      }
+        },
+      });
     }
 
-    return result.slice(0, 24); // 최대 24시간까지만
+    pointsWithMs.sort((a, b) => a.ms - b.ms);
+    return pointsWithMs.map((x) => x.point).slice(0, 24);
+  }
+
+  private parseKstForecastMs(fcstDate: string, fcstTime: string): number {
+    // KMA date/time is in KST(UTC+9): YYYYMMDD + HHMM
+    const y = parseInt(fcstDate.slice(0, 4), 10);
+    const m = parseInt(fcstDate.slice(4, 6), 10);
+    const d = parseInt(fcstDate.slice(6, 8), 10);
+    const hh = parseInt(fcstTime.slice(0, 2), 10);
+    const mm = parseInt(fcstTime.slice(2, 4), 10);
+
+    if (
+      !Number.isFinite(y) ||
+      !Number.isFinite(m) ||
+      !Number.isFinite(d) ||
+      !Number.isFinite(hh) ||
+      !Number.isFinite(mm)
+    ) {
+      return Number.NaN;
+    }
+
+    // Convert KST wall-clock -> UTC epoch
+    return Date.UTC(y, m - 1, d, hh - 9, mm, 0, 0);
   }
 
   private parseDailyForecast(items: VilageFcstItem[]): WeatherDailyPoint[] {

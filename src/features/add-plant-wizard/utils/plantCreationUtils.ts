@@ -1,4 +1,5 @@
-import { generateId, type Plant } from "@/domain/types";
+import type { Plant } from "@/domain/types";
+import { generateId } from "@/lib/utils/id";
 import type { TaskRule, TaskEvent } from "@/domain/types";
 import type { Step1FormValues } from "../model";
 import type { Step2Data } from "../types";

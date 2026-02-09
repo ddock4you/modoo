@@ -133,7 +133,8 @@ describe("KmaWeatherProvider", () => {
   describe("getHourlyForecast", () => {
     it("시간별 예보 데이터를 가져와 파싱해야 함", async () => {
       // 테스트 시간을 고정하여 미래 데이터 필터링 문제를 방지
-      const testTime = new Date("2024-01-01T14:00:00Z"); // 오후 2시로 설정
+      vi.useFakeTimers();
+      const testTime = new Date("2024-01-01T14:00:00+09:00"); // KST 기준 오후 2시
       vi.setSystemTime(testTime);
       const mockResponse = {
         response: {
@@ -186,6 +187,9 @@ describe("KmaWeatherProvider", () => {
 
     it("과거 예보를 필터링해야 함", async () => {
       // 현재 시간 이후의 데이터만 포함한 모의 응답 (시간 필터링이 제대로 동작하는지 확인)
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date("2024-01-01T10:00:00+09:00"));
+
       const currentHour = new Date().getHours();
       const futureHour = (currentHour + 2) % 24; // 2시간 후
       const futureTime = futureHour.toString().padStart(2, "0") + "00";
@@ -224,6 +228,8 @@ describe("KmaWeatherProvider", () => {
       expect(result.length).toBeGreaterThan(0);
       expect(result[0].tempC).toBe(25.0);
       expect(result[0].humidityPct).toBe(60);
+
+      vi.useRealTimers();
     });
 
     it("결과를 24시간으로 제한해야 함", async () => {

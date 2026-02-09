@@ -1,3 +1,3 @@
 export * from "./types";
-export * from "./use-cases/calculateNextDue";
-export * from "./use-cases/calculatePlantStatus";
+export * from "./plants/use-cases/calculateNextDue";
+export * from "./plants/use-cases/calculatePlantStatus";

@@ -3,7 +3,7 @@ import imageCompression from "browser-image-compression";
 import type { MediaStore } from "./MediaStore";
 import { THUMBNAIL_CONFIG, SUPPORTED_IMAGE_TYPES } from "./MediaStore";
 import type { PhotoMeta } from "../../domain/types";
-import { generateId } from "../../domain/types";
+import { generateId } from "../utils/id";
 import { getDB } from "../storage/db";
 
 // 원본 이미지 압축 설정

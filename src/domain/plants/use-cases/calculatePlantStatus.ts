@@ -81,8 +81,18 @@ export function calculateAllPlantsStatus(
   rules: TaskRule[],
   now: number = Date.now()
 ): PlantStatusInfo[] {
+  const rulesByPlantId = new Map<string, TaskRule[]>();
+  for (const rule of rules) {
+    const list = rulesByPlantId.get(rule.plantId);
+    if (list) {
+      list.push(rule);
+    } else {
+      rulesByPlantId.set(rule.plantId, [rule]);
+    }
+  }
+
   return plants.map((plant) => {
-    const plantRules = rules.filter((rule) => rule.plantId === plant.id);
+    const plantRules = rulesByPlantId.get(plant.id) ?? [];
     return calculatePlantStatus(plant, plantRules, now);
   });
 }
@@ -95,10 +105,17 @@ export function calculateAllPlantsStatus(
  */
 export function calculatePlantsStatusStats(statusInfos: PlantStatusInfo[]): PlantsStatusStats {
   const total = statusInfos.length;
-  const good = statusInfos.filter((info) => info.status === "good").length;
-  const warning = statusInfos.filter((info) => info.status === "warning").length;
-  const danger = statusInfos.filter((info) => info.status === "danger").length;
-  const noStatus = statusInfos.filter((info) => info.status === null).length;
+  let good = 0;
+  let warning = 0;
+  let danger = 0;
+  let noStatus = 0;
+
+  for (const info of statusInfos) {
+    if (info.status === "good") good++;
+    else if (info.status === "warning") warning++;
+    else if (info.status === "danger") danger++;
+    else noStatus++;
+  }
 
   const goodPercentage = total > 0 ? Math.round((good / total) * 100) : 0;
 

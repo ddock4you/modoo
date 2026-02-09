@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  calculatePlantStatus,
-  calculateAllPlantsStatus,
-  calculatePlantsStatusStats,
-} from "./calculatePlantStatus";
+import { calculateAllPlantsStatus, calculatePlantStatus, calculatePlantsStatusStats } from "./calculatePlantStatus";
 import type { Plant, PlantStatus, TaskRule } from "../types";
 
 describe("calculatePlantStatus", () => {

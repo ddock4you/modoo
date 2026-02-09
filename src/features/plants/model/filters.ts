@@ -1,4 +1,4 @@
-import { calculatePlantStatus } from "@/domain/use-cases/calculatePlantStatus";
+import { calculatePlantStatus } from "@/domain";
 import type { Plant, TaskRule } from "@/domain/types";
 import type { PlantFilters } from "@/features/plants/types";
 

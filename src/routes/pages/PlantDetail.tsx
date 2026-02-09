@@ -6,8 +6,8 @@ import { useMedia } from "../../lib/media/useMedia";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { Button } from "../../components/ui/button";
 import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { generateId } from "@/lib/utils/id";
 import {
-  generateId,
   type Plant,
   type TaskRule,
   type TaskEvent,
