@@ -4,6 +4,7 @@ import { useMedia } from "@/lib/media/useMedia";
 import type { Step1FormValues } from "../model";
 import type { Step2Data, Step3Data } from "../types";
 import type { Plant } from "@/domain/types";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 import {
   createPlantFromStep1,
   createTaskRuleFromSteps,
@@ -68,9 +69,9 @@ export function usePlantWizardMutation(options?: MutationOptions) {
         await storage.upsertPlant(updatedPlant);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["plants"] });
-      queryClient.invalidateQueries({ queryKey: ["taskRules"] });
-      queryClient.invalidateQueries({ queryKey: ["dueTasks"] });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.list() });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.taskRules() });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.dueTasks() });
 
       return { plantId: plant.id, coverPhotoId };
     },

@@ -5,6 +5,7 @@ import { PlantFilters } from "./ui";
 import PlantsList from "./PlantsList";
 import { Button } from "../../../components/ui/button";
 import type { Plant, TaskRule } from "@/domain/types";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 
 export function PlantsTab() {
   const storage = useStorage();
@@ -16,12 +17,12 @@ export function PlantsTab() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ["plants"],
+    queryKey: PLANTS_QK.list(),
     queryFn: () => storage.listPlants(),
   });
 
   const { data: taskRules = [], isLoading: isRulesLoading } = useQuery<TaskRule[]>({
-    queryKey: ["taskRules"],
+    queryKey: PLANTS_QK.taskRules(),
     queryFn: () => storage.listTaskRules(),
   });
 
@@ -45,7 +46,7 @@ export function PlantsTab() {
     mutationFn: (id: string) => storage.deletePlant(id),
     onSuccess: (_, deletedId) => {
       // 캐시 직접 업데이트: 삭제된 식물을 목록에서 제거
-      queryClient.setQueryData(["plants"], (oldPlants: Plant[] = []) => {
+      queryClient.setQueryData(PLANTS_QK.list(), (oldPlants: Plant[] = []) => {
         return oldPlants.filter((plant) => plant.id !== deletedId);
       });
     },
@@ -75,7 +76,7 @@ export function PlantsTab() {
         plants={paginatedPlants}
         isLoading={isLoading || isRulesLoading}
         error={error}
-        onRetry={() => queryClient.invalidateQueries({ queryKey: ["plants"] })}
+        onRetry={() => queryClient.invalidateQueries({ queryKey: PLANTS_QK.list() })}
         gridColumns={3}
         enableInfiniteScroll={true}
         onLoadMore={loadMore}

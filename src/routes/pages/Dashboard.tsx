@@ -6,6 +6,7 @@ import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidge
 import { VisualSection } from "@/components/dashboard-visual/VisualSection";
 import { RecommendedWateringSchedule } from "@/features/plants/components/watering-schedule/RecommendedWateringSchedule";
 import PlantsList from "@/features/plants/components/PlantsList";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 
 export function Dashboard() {
   const storage = useStorage();
@@ -16,7 +17,7 @@ export function Dashboard() {
     error: plantsError,
     refetch: refetchPlants,
   } = useQuery({
-    queryKey: ["plants"],
+    queryKey: PLANTS_QK.list(),
     queryFn: () => storage.listPlants(),
   });
 

@@ -3,12 +3,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Weather } from "./Weather";
 
 const mockUseWeather = vi.fn();
+const mockUseCurrentWeather = vi.fn();
 const mockUseWeatherFormat = vi.fn();
 const mockUseWeatherIcon = vi.fn();
 const mockUseYesterdayTemperatureComparison = vi.fn();
 
 vi.mock("@/features/weather/hooks/useWeather", () => ({
   useWeather: () => mockUseWeather(),
+  useCurrentWeather: () => mockUseCurrentWeather(),
   useWeatherFormat: () => mockUseWeatherFormat(),
   useWeatherIcon: () => mockUseWeatherIcon(),
   useYesterdayTemperatureComparison: () => mockUseYesterdayTemperatureComparison(),
@@ -52,6 +54,15 @@ describe("Weather Page", () => {
       now: { tempC: 25, humidityPct: 60, windMs: 2.5, weatherCode: { pty: 0, sky: 1 }, updatedAt: Date.now() },
       airQuality: { pm10: 35, pm25: 20, updatedAt: Date.now() },
       daily: [{ date: "2024-01-01", minC: 20, maxC: 28 }],
+    });
+
+    mockUseCurrentWeather.mockReturnValue({
+      data: { tempC: 25, humidityPct: 60, windMs: 2.5, weatherCode: { pty: 0, sky: 1 } },
+      isLoading: false,
+      error: null,
+      isStale: false,
+      isOnline: true,
+      lastUpdated: Date.now(),
     });
 
     mockUseWeatherFormat.mockReturnValue({

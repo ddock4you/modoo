@@ -5,6 +5,7 @@ import { useStorage } from "../../lib/storage/useStorage";
 import { useMedia } from "../../lib/media/useMedia";
 import { MobileNavigation } from "../../components/mobile-navigation";
 import { Button } from "../../components/ui/button";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 import {
   generateId,
   type Plant,
@@ -16,6 +17,7 @@ import {
 
 export function PlantDetail() {
   const { id } = useParams();
+  const plantId = id ?? "";
   const storage = useStorage();
   const media = useMedia();
   const queryClient = useQueryClient();
@@ -27,7 +29,7 @@ export function PlantDetail() {
     isLoading: plantLoading,
     error: plantError,
   } = useQuery({
-    queryKey: ["plant", id],
+    queryKey: PLANTS_QK.detail(plantId),
     queryFn: async (): Promise<Plant | undefined> => {
       if (!id) return undefined;
       return await storage.getPlant(id);
@@ -41,7 +43,7 @@ export function PlantDetail() {
     isLoading: rulesLoading,
     error: rulesError,
   } = useQuery({
-    queryKey: ["taskRules", id],
+    queryKey: PLANTS_QK.taskRules(plantId),
     queryFn: async (): Promise<TaskRule[]> => {
       if (!id) return [];
       return await storage.listTaskRules(id);
@@ -55,7 +57,7 @@ export function PlantDetail() {
     isLoading: photosLoading,
     error: photosError,
   } = useQuery({
-    queryKey: ["photos", id],
+    queryKey: PLANTS_QK.photos(plantId),
     queryFn: async (): Promise<PhotoMeta[]> => {
       if (!id) return [];
       return await storage.listPhotos(id);
@@ -87,9 +89,9 @@ export function PlantDetail() {
     },
     onSuccess: () => {
       // 관련 쿼리들을 무효화하여 UI 갱신
-      queryClient.invalidateQueries({ queryKey: ["taskRules", id] });
-      queryClient.invalidateQueries({ queryKey: ["dueTasks"] });
-      queryClient.invalidateQueries({ queryKey: ["plant", id] });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.taskRules(plantId) });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.dueTasks() });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.detail(plantId) });
     },
   });
 
@@ -113,7 +115,7 @@ export function PlantDetail() {
     onSuccess: () => {
       setUploadProgress(0); // 진행률 초기화
       // 사진 목록 갱신
-      queryClient.invalidateQueries({ queryKey: ["photos", id] });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.photos(plantId) });
     },
     onError: () => {
       setUploadProgress(0); // 에러 시 진행률 초기화
@@ -133,7 +135,7 @@ export function PlantDetail() {
     },
     onSuccess: () => {
       // 사진 목록 갱신
-      queryClient.invalidateQueries({ queryKey: ["photos", id] });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.photos(plantId) });
     },
   });
 

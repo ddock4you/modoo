@@ -1,6 +1,7 @@
 import { AlertCircle } from "lucide-react";
 import {
   useWeather,
+  useCurrentWeather,
   useWeatherFormat,
   useWeatherIcon,
   useYesterdayTemperatureComparison,
@@ -10,9 +11,11 @@ import { LocationSection } from "@/components/dashboard-visual/LocationSection";
 import { useLocationSearch } from "@/features/weather/hooks/useLocationSearch";
 import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidget";
 import { AirQualityBadge } from "@/features/weather/components/badges/AirQualityBadge";
+import { WeatherUpdatedAtBadge } from "@/features/weather/components/badges/WeatherUpdatedAtBadge";
 
 function WeatherHeader() {
   const { location } = useWeather();
+  const currentWeather = useCurrentWeather();
   const {
     searchLocation,
     isLoading: isLocating,
@@ -23,13 +26,16 @@ function WeatherHeader() {
     errorClearDelay: 5000,
   });
   return (
-    <div className="flex w-full justify-center">
-      <LocationSection
-        locationName={location?.name}
-        isLocating={isLocating}
-        locationError={locationError}
-        onSearchLocation={searchLocation}
-      />
+    <div className="flex w-full flex-col items-center gap-2">
+      <div className="flex w-full justify-center">
+        <LocationSection
+          locationName={location?.name}
+          isLocating={isLocating}
+          locationError={locationError}
+          onSearchLocation={searchLocation}
+        />
+      </div>
+      <WeatherUpdatedAtBadge updatedAt={currentWeather.lastUpdated} isOnline={currentWeather.isOnline} />
     </div>
   );
 }

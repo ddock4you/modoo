@@ -5,6 +5,7 @@ import type { Plant, TaskRule } from "@/domain/types";
 import { ScheduleHeader } from "@/features/plants/components/watering-schedule/ScheduleHeader";
 import { ScheduleTimeline } from "@/features/plants/components/watering-schedule/ScheduleTimeline";
 import { SchedulePlants } from "@/features/plants/components/watering-schedule/SchedulePlants";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 
 function calculateDayFromToday(targetDate: number, now: number): number | null {
   const todayStart = new Date(now);
@@ -85,12 +86,12 @@ export function RecommendedWateringSchedule() {
   const [selectedDay, setSelectedDay] = useState(1);
 
   const { data: rules = [], isLoading: rulesLoading } = useQuery({
-    queryKey: ["taskRules"],
+    queryKey: PLANTS_QK.taskRules(),
     queryFn: () => storage.listTaskRules(),
   });
 
   const { data: plants = [], isLoading: plantsLoading } = useQuery({
-    queryKey: ["plants"],
+    queryKey: PLANTS_QK.list(),
     queryFn: () => storage.listPlants(),
   });
 

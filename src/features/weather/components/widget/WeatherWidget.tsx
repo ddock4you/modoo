@@ -23,6 +23,14 @@ export function WeatherWidget() {
   const { formatTemperature } = useWeatherFormat();
   const hourlyWeather = useHourlyWeather();
 
+  const updatedAtCandidates = [
+    currentWeather.lastUpdated,
+    hourlyWeather.lastUpdated,
+    dailyWeather.lastUpdated,
+  ].filter((t): t is number => typeof t === "number" && t > 0);
+
+  const updatedAt = updatedAtCandidates.length > 0 ? Math.max(...updatedAtCandidates) : undefined;
+
   // 24시간 시간별 데이터
   const hourlyData = hourlyWeather.data || [];
 
@@ -51,6 +59,8 @@ export function WeatherWidget() {
         data: dailyWeather.data || undefined,
       }}
       summary={summary}
+      updatedAt={updatedAt}
+      isOnline={summary.isOnline}
       getIconName={getIconName}
       getConditionText={getConditionText}
       formatTemperature={formatTemperature}

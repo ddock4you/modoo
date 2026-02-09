@@ -13,6 +13,7 @@ import type {
   AirQuality,
 } from "../../domain/types";
 import { weatherRepository } from "./WeatherRepository";
+import { WEATHER_QK } from "./queryKeys";
 
 // 기본 위치 (서울 송파구 잠실동)
 const DEFAULT_LOCATION: WeatherLocation = {
@@ -103,7 +104,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
         // 날짜가 변경됨 - 어제 데이터 캐시 무효화
         queryClient
           .invalidateQueries({
-            queryKey: ["weather", "yesterday"],
+            queryKey: WEATHER_QK.yesterdayAll(),
             exact: false,
           })
           .catch(console.error);
@@ -162,7 +163,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
         setCurrentLocation(location);
 
         // 위치 변경 시 날씨 쿼리 무효화
-        queryClient.invalidateQueries({ queryKey: ["weather"] });
+        queryClient.invalidateQueries({ queryKey: WEATHER_QK.all() });
       } catch (error) {
         console.error("Failed to update location:", error);
       }
@@ -196,7 +197,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
   const locationId = currentLocation?.id || "default";
 
   const nowQuery = useQuery({
-    queryKey: ["weather", "now", locationId],
+    queryKey: WEATHER_QK.now(locationId),
     queryFn: () => weatherRepository.getNow(locationId),
     enabled: !!locationId && isOnline,
     staleTime: 1000 * 60 * 10, // 10분
@@ -211,7 +212,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
   });
 
   const hourlyQuery = useQuery({
-    queryKey: ["weather", "hourly", locationId],
+    queryKey: WEATHER_QK.hourly(locationId),
     queryFn: () => weatherRepository.getHourly(locationId),
     enabled: !!locationId && isOnline,
     staleTime: 1000 * 60 * 60, // 1시간
@@ -224,7 +225,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
   });
 
   const dailyQuery = useQuery({
-    queryKey: ["weather", "daily", locationId],
+    queryKey: WEATHER_QK.daily(locationId),
     queryFn: () => weatherRepository.getDaily(locationId),
     enabled: !!locationId && isOnline,
     staleTime: 1000 * 60 * 60 * 6, // 6시간
@@ -237,7 +238,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
   });
 
   const airQualityQuery = useQuery({
-    queryKey: ["weather", "airQuality", locationId],
+    queryKey: WEATHER_QK.airQuality(locationId),
     queryFn: () => weatherRepository.getAirQuality(locationId),
     enabled: !!locationId && isOnline,
     staleTime: 1000 * 60 * 60, // 1시간
@@ -251,7 +252,7 @@ export function WeatherProvider({ children }: WeatherProviderProps) {
 
   // 액션 함수들
   const refreshWeather = useCallback(async () => {
-    await queryClient.invalidateQueries({ queryKey: ["weather"] });
+    await queryClient.invalidateQueries({ queryKey: WEATHER_QK.all() });
   }, [queryClient]);
 
   const requestLocationPermission = useCallback(async () => {
