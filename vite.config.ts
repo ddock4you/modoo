@@ -31,6 +31,14 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // e2e는 Playwright에서 실행한다. (Vitest에 포함되면 test.describe 충돌)
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/.{git,idea,cache,output,temp}/**",
+      "e2e/**",
+      "**/*.e2e.*",
+    ],
   },
   plugins: [
     react(),

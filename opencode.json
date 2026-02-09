@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/schema.json",
+  "instructions": [
+    ".cursor/rules/**/*.mdc",
+    ".cursor/skills/**/SKILL.md",
+    ".cursor/skills/**/AGENTS.md",
+    ".cursor/skills/**/rules/**/*.md"
+  ],
+  "permission": {
+    "external_directory": "deny"
+  }
+}

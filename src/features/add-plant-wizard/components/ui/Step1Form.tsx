@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { type Step1FormValues } from "../model";
+import { type Step1FormValues } from "@/features/add-plant-wizard/model";
 import { cn } from "@/lib/utils";
 import AddPlantIllustration from "@/assets/illustrations/illust1.png";
 import { Info, Calendar } from "lucide-react";

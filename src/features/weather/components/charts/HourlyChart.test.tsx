@@ -55,19 +55,12 @@ describe("HourlyChart", () => {
 
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
     expect(screen.getByTestId("composed-chart")).toBeInTheDocument();
-    expect(screen.getByText("← 스크롤하여 전체 24시간 데이터를 확인하세요 →")).toBeInTheDocument();
   });
 
-  it("온도 영역 차트를 표시해야 함", () => {
+  it("온도 라인 차트를 표시해야 함", () => {
     render(<HourlyChart points={mockHourlyData} showTemperature={true} />);
 
-    // Area 컴포넌트가 렌더링되는지 확인 (mock으로 인해 data-testid로 확인)
-    expect(screen.getByTestId("area")).toBeInTheDocument();
-  });
-
-  it("습도 선 차트를 표시해야 함", () => {
-    render(<HourlyChart points={mockHourlyData} showHumidity={true} />);
-
+    // showTemperature=true 이면 Line이 렌더링된다.
     expect(screen.getByTestId("line")).toBeInTheDocument();
   });
 
@@ -80,21 +73,13 @@ describe("HourlyChart", () => {
   it("온도 차트를 숨길 수 있어야 함", () => {
     render(<HourlyChart points={mockHourlyData} showTemperature={false} />);
 
-    // Area 컴포넌트가 렌더링되지 않아야 함 (하지만 mock으로 인해 확인하기 어려움)
-    // 실제로는 showTemperature가 false일 때 Area가 렌더링되지 않음
-    expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
-  });
-
-  it("습도 차트를 숨길 수 있어야 함", () => {
-    render(<HourlyChart points={mockHourlyData} showHumidity={false} />);
-
-    expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
+    expect(screen.queryByTestId("line")).not.toBeInTheDocument();
   });
 
   it("강수확률 차트를 숨길 수 있어야 함", () => {
     render(<HourlyChart points={mockHourlyData} showPrecipitation={false} />);
 
-    expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
+    expect(screen.queryByTestId("bar")).not.toBeInTheDocument();
   });
 
   it("데이터를 24시간으로 제한해야 함", () => {
@@ -113,7 +98,7 @@ describe("HourlyChart", () => {
     render(<HourlyChart points={[]} />);
 
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
-    expect(screen.getByText("← 스크롤하여 전체 24시간 데이터를 확인하세요 →")).toBeInTheDocument();
+    expect(screen.getByTestId("composed-chart")).toBeInTheDocument();
   });
 
   it("height prop을 올바르게 적용해야 함", () => {

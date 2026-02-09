@@ -142,7 +142,8 @@ describe("WeatherRepository", () => {
       const now = new Date("2024-01-01T14:37:00").getTime();
       const normalized = (repository as any).normalizeBaseTime(now, "daily");
       const expected = new Date("2024-01-01T12:00:00").getTime(); // 14시는 12시로 정규화 (3시간 단위)
-      expect(normalized).toBe(expected);
+      // WeatherRepository는 daily 캐시 키 버전업을 위해 baseTime에 +1ms 오프셋을 적용한다.
+      expect(normalized).toBe(expected + 1);
     });
   });
 

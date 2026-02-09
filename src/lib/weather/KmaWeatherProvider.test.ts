@@ -457,33 +457,30 @@ describe("KmaWeatherProvider", () => {
   });
 
   describe("getHourlyForecast24h", () => {
-    it("UltraSrtFcst + VilageFcst 데이터를 조합하여 24시간 데이터를 반환해야 함", async () => {
-      // 현재 시간을 15:00:00으로 고정하여 예측 가능한 테스트
+    it("VilageFcst(단기예보)만으로 24시간 데이터를 구성해야 함", async () => {
+      // 현재 시간을 고정해 예측 가능한 timeKey를 만든다.
       const mockNow = new Date("2024-11-13T15:00:00");
       vi.useFakeTimers();
       vi.setSystemTime(mockNow);
 
-      // Date.now를 직접 mock해서 모든 곳에서 적용되도록
-      global.Date.now = vi.fn(() => mockNow.getTime());
-
-      // UltraSrtFcst 모킹 (0-6시간)
-      const mockUltraResponse = {
+      const mockVilageResponse = {
         response: {
           header: { resultCode: "00", resultMsg: "success" },
           body: {
             items: {
               item: [
+                // 시간 키는 YYYYMMDD + HH00 형태로 매칭된다.
                 {
-                  category: "T1H",
+                  category: "TMP",
                   fcstDate: "20241113",
                   fcstTime: "1500",
-                  fcstValue: "22.0",
+                  fcstValue: "20.0",
                 },
                 {
                   category: "REH",
                   fcstDate: "20241113",
                   fcstTime: "1500",
-                  fcstValue: "65",
+                  fcstValue: "70",
                 },
                 {
                   category: "POP",
@@ -497,182 +494,39 @@ describe("KmaWeatherProvider", () => {
         },
       };
 
-      // VilageFcst 모킹 (6-24시간) - 여러 시간대 추가
-      const mockVilageResponse = {
-        response: {
-          header: { resultCode: "00", resultMsg: "success" },
-          body: {
-            items: {
-              item: [
-                // 18시 KST = 09시 UTC 데이터
-                {
-                  category: "TMP",
-                  fcstDate: "20241113",
-                  fcstTime: "0900",
-                  fcstValue: "20.0",
-                },
-                {
-                  category: "REH",
-                  fcstDate: "20241113",
-                  fcstTime: "0900",
-                  fcstValue: "70",
-                },
-                {
-                  category: "POP",
-                  fcstDate: "20241113",
-                  fcstTime: "0900",
-                  fcstValue: "20",
-                },
-                // 21시 KST = 12시 UTC 데이터
-                {
-                  category: "TMP",
-                  fcstDate: "20241113",
-                  fcstTime: "1200",
-                  fcstValue: "18.0",
-                },
-                {
-                  category: "REH",
-                  fcstDate: "20241113",
-                  fcstTime: "1200",
-                  fcstValue: "75",
-                },
-                {
-                  category: "POP",
-                  fcstDate: "20241113",
-                  fcstTime: "1200",
-                  fcstValue: "10",
-                },
-                // 다음날 00시 KST = 15시 UTC 데이터
-                {
-                  category: "TMP",
-                  fcstDate: "20241113",
-                  fcstTime: "1500",
-                  fcstValue: "16.0",
-                },
-                {
-                  category: "REH",
-                  fcstDate: "20241113",
-                  fcstTime: "1500",
-                  fcstValue: "80",
-                },
-                {
-                  category: "POP",
-                  fcstDate: "20241113",
-                  fcstTime: "1500",
-                  fcstValue: "5",
-                },
-                // 다음날 03시 KST = 18시 UTC 데이터
-                {
-                  category: "TMP",
-                  fcstDate: "20241113",
-                  fcstTime: "1800",
-                  fcstValue: "15.0",
-                },
-                {
-                  category: "REH",
-                  fcstDate: "20241113",
-                  fcstTime: "1800",
-                  fcstValue: "85",
-                },
-                {
-                  category: "POP",
-                  fcstDate: "20241113",
-                  fcstTime: "1800",
-                  fcstValue: "0",
-                },
-              ],
-            },
-          },
-        },
-      };
-
-      // fetch 모킹: 첫 번째 호출은 UltraSrtFcst, 두 번째 호출은 VilageFcst
-      let callCount = 0;
-      global.fetch = vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve({
-            json: () => Promise.resolve(mockUltraResponse),
-          });
-        } else {
-          return Promise.resolve({
-            json: () => Promise.resolve(mockVilageResponse),
-          });
-        }
+      global.fetch = vi.fn().mockResolvedValue({
+        json: () => Promise.resolve(mockVilageResponse),
       });
 
       const result = await provider.getHourlyForecast24h(mockLocation);
-
       expect(result).toHaveLength(24);
-      // 첫 번째 데이터는 UltraSrtFcst 데이터 사용 (현재 시간 이후 첫 번째)
       expect(result[0]).toMatchObject({
-        tempC: 22.0,
-        humidityPct: 65,
-        precipProbPct: 0, // POP 데이터 없음
+        tempC: 20,
+        humidityPct: 70,
+        precipProbPct: 30,
       });
-      // 세 번째 데이터는 09:00 UTC 데이터 사용 (08:00는 06:00 단위로 15:00 데이터 사용)
-      expect(result[2]).toMatchObject({
-        tempC: 16.0,
-        humidityPct: 80,
-        precipProbPct: 5,
-      });
-      // 네 번째 데이터는 09:00 UTC 데이터 사용 (실제로는 18:00 데이터가 매핑되는 것 같음)
-      expect(result[3]).toMatchObject({
-        tempC: 15.0,
-        humidityPct: 85,
-        precipProbPct: 0,
-      });
-      expect(global.fetch).toHaveBeenCalledTimes(2);
 
-      // Date.now 복원 및 타이머 리셋
-      const originalDateNow2 = Date.now;
-      global.Date.now = originalDateNow2;
+      // 단기예보(VilageFcst) 호출 1회
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      const calledUrl = (global.fetch as any).mock.calls[0]?.[0] as string;
+      expect(calledUrl).toContain("getVilageFcst");
+
       vi.useRealTimers();
     });
 
-    it("VilageFcst 실패 시 UltraSrtFcst 데이터만 반환해야 함", async () => {
-      const mockUltraResponse = {
-        response: {
-          header: { resultCode: "00", resultMsg: "success" },
-          body: {
-            items: {
-              item: [
-                {
-                  category: "T1H",
-                  fcstDate: "20241113",
-                  fcstTime: "1500",
-                  fcstValue: "22.0",
-                },
-              ],
+    it("VilageFcst API 에러 응답이면 에러를 발생시켜야 함", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        json: () =>
+          Promise.resolve({
+            response: {
+              header: { resultCode: "99", resultMsg: "error" },
             },
-          },
-        },
-      };
-
-      // 첫 번째 호출 성공, 두 번째 호출 실패
-      let callCount = 0;
-      global.fetch = vi.fn().mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.resolve({
-            json: () => Promise.resolve(mockUltraResponse),
-          });
-        } else {
-          return Promise.resolve({
-            json: () =>
-              Promise.resolve({
-                response: {
-                  header: { resultCode: "99", resultMsg: "error" },
-                },
-              }),
-          });
-        }
+          }),
       });
 
-      const result = await provider.getHourlyForecast24h(mockLocation);
-
-      expect(result.length).toBeGreaterThan(0);
-      expect(result.length).toBeLessThanOrEqual(6); // UltraSrtFcst만으로 최대 6시간
+      await expect(provider.getHourlyForecast24h(mockLocation)).rejects.toThrow(
+        /KMA VilageFcst API Error/i
+      );
     });
   });
 

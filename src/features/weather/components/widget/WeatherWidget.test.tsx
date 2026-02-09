@@ -31,12 +31,20 @@ vi.mock("@/features/weather/hooks/useWeather", () => ({
 }));
 
 // recharts와 차트 컴포넌트 모킹
-vi.mock("@/components/weather/charts/HourlyChart", () => ({
+vi.mock("@/features/weather/components/charts/HourlyChart", () => ({
   HourlyChart: () => <div data-testid="hourly-chart">HourlyChart Mock</div>,
 }));
 
-vi.mock("@/components/weather/charts/HumidityChart", () => ({
+vi.mock("@/features/weather/components/charts/HumidityChart", () => ({
   HumidityChart: () => <div data-testid="humidity-chart">HumidityChart Mock</div>,
+}));
+
+vi.mock("@/features/weather/components/lists/WeatherIconList", () => ({
+  WeatherIconList: () => <div data-testid="weather-icon-list">WeatherIconList Mock</div>,
+}));
+
+vi.mock("@/features/weather/components/lists/HumidityIconList", () => ({
+  HumidityIconList: () => <div data-testid="humidity-icon-list">HumidityIconList Mock</div>,
 }));
 
 describe("WeatherWidget", () => {
@@ -179,26 +187,23 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    // 위치 정보 확인
-    expect(screen.getByText("서울 송파구 잠실동")).toBeInTheDocument();
+    // 섹션 타이틀 확인
+    expect(screen.getByText("오늘의 날씨")).toBeInTheDocument();
+    expect(screen.getByText("오늘의 습도")).toBeInTheDocument();
 
-    // 온도 표시 확인 (23°와 맑음이 같은 요소에 있으므로 통합 확인)
+    // 온도 + 컨디션 텍스트 확인
     expect(screen.getByText(/23°/)).toBeInTheDocument();
-
-    // 날씨 상태 확인 (23° 맑음 형태로 표시됨)
     expect(screen.getByText(/맑음/)).toBeInTheDocument();
 
-    // 추가 정보 확인 (WeatherWidget에서는 온도와 날씨 상태만 표시)
+    // 차트/리스트 렌더링 확인 (mocked)
+    expect(screen.getByText("HourlyChart Mock")).toBeInTheDocument();
+    expect(screen.getByText("HumidityChart Mock")).toBeInTheDocument();
+    expect(screen.getByText("WeatherIconList Mock")).toBeInTheDocument();
+    expect(screen.getByText("HumidityIconList Mock")).toBeInTheDocument();
 
-    // 상세보기 링크 확인 (텍스트가 "오늘의 날씨"로 변경됨)
-    expect(screen.getByText("오늘의 날씨")).toBeInTheDocument();
-
-    // HourlyChart 컴포넌트가 렌더링되는지 확인
-    // (실제로는 recharts 컴포넌트가 렌더링되므로 DOM에 특정 요소가 있는지 확인)
-    const chartContainer =
-      document.querySelector('[data-testid="hourly-chart"]') ||
-      document.querySelector(".recharts-wrapper");
-    expect(chartContainer).toBeInTheDocument();
+    // 상세 페이지 링크가 존재해야 함 (아이콘만 있어 accessible name은 없을 수 있음)
+    const links = screen.getAllByRole("link");
+    expect(links.some((a) => a.getAttribute("href") === "/weather")).toBe(true);
   });
 
   it("상세보기 링크를 클릭할 수 있다", async () => {
@@ -220,10 +225,10 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    const link = screen.getByRole("link", { name: /오늘의 날씨/ });
-    expect(link).toHaveAttribute("href", "/weather");
-
-    await user.click(link);
+    const links = screen.getAllByRole("link");
+    const weatherLink = links.find((a) => a.getAttribute("href") === "/weather");
+    expect(weatherLink).toBeTruthy();
+    if (weatherLink) await user.click(weatherLink);
     // React Router로 인해 실제 네비게이션은 모킹되어 있으므로 클릭 가능성만 확인
   });
 
@@ -253,8 +258,8 @@ describe("WeatherWidget", () => {
     );
 
     // 섹션 제목 확인
-    expect(screen.getByText("시간대별 날씨 예보")).toBeInTheDocument();
-    expect(screen.getByText("시간대별 습도 예보")).toBeInTheDocument();
+    expect(screen.getByText("오늘의 날씨")).toBeInTheDocument();
+    expect(screen.getByText("오늘의 습도")).toBeInTheDocument();
 
     // HourlyChart와 HumidityChart가 렌더링되는지 확인 (모킹된 컴포넌트)
     expect(screen.getByText("HourlyChart Mock")).toBeInTheDocument();
@@ -294,13 +299,11 @@ describe("WeatherWidget", () => {
       </TestWrapper>
     );
 
-    // 날씨 아이콘과 습도 아이콘이 표시되는지 확인
-    const weatherIcons = screen.getAllByText("🌧️");
-    expect(weatherIcons.length).toBeGreaterThan(0);
-
-    // 습도 아이콘들도 확인 (💧 기본 아이콘)
-    const humidityIcons = screen.getAllByText("💧");
-    expect(humidityIcons.length).toBeGreaterThan(0);
+    // 위젯은 아이콘을 직접 렌더링하지 않고(리스트 컴포넌트에 위임),
+    // 상태 카드에서 컨디션 텍스트를 표시한다.
+    expect(screen.getByText(/23°\s*비/)).toBeInTheDocument();
+    expect(screen.getByText("WeatherIconList Mock")).toBeInTheDocument();
+    expect(screen.getByText("HumidityIconList Mock")).toBeInTheDocument();
   });
 
   it("데이터가 없을 때 기본값을 표시한다", () => {

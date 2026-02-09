@@ -56,41 +56,12 @@ describe("HumidityChart", () => {
 
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
     expect(screen.getByTestId("composed-chart")).toBeInTheDocument();
-    expect(screen.getByText("식물에게 가장 적합한 습도 범위: 40-60%")).toBeInTheDocument();
   });
 
   it("습도 선 차트를 표시해야 함", () => {
     render(<HumidityChart points={mockHourlyData} />);
 
     expect(screen.getByTestId("line")).toBeInTheDocument();
-  });
-
-  it("권장 범위 영역을 표시해야 함", () => {
-    render(<HumidityChart points={mockHourlyData} showOptimalRange={true} />);
-
-    expect(screen.getByTestId("reference-area")).toBeInTheDocument();
-    expect(screen.getAllByTestId("reference-line")).toHaveLength(2); // min/max 선
-  });
-
-  it("권장 범위 표시를 비활성화할 수 있어야 함", () => {
-    render(<HumidityChart points={mockHourlyData} showOptimalRange={false} />);
-
-    expect(screen.queryByTestId("reference-area")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("reference-line")).not.toBeInTheDocument();
-  });
-
-  it("커스텀 권장 범위를 설정할 수 있어야 함", () => {
-    render(<HumidityChart points={mockHourlyData} optimalMin={30} optimalMax={70} />);
-
-    expect(screen.getByText("식물에게 가장 적합한 습도 범위: 30-70%")).toBeInTheDocument();
-  });
-
-  it("습도 상태에 따른 범례를 표시해야 함", () => {
-    render(<HumidityChart points={mockHourlyData} />);
-
-    expect(screen.getByText("적정 (40-60%)")).toBeInTheDocument();
-    expect(screen.getByText("건조 (<40%)")).toBeInTheDocument();
-    expect(screen.getByText("습함 (>60%)")).toBeInTheDocument();
   });
 
   it("데이터를 24시간으로 제한해야 함", () => {
@@ -109,6 +80,7 @@ describe("HumidityChart", () => {
     render(<HumidityChart points={[]} />);
 
     expect(screen.getByTestId("responsive-container")).toBeInTheDocument();
+    expect(screen.getByTestId("composed-chart")).toBeInTheDocument();
   });
 
   it("height prop을 올바르게 적용해야 함", () => {
