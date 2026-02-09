@@ -1,11 +1,11 @@
 import { initDB, type ModooDB } from "../storage/db";
+import type { IDBPDatabase } from "idb";
 import type {
   WeatherLocation,
   WeatherNow,
   WeatherHourlyPoint,
   WeatherDailyPoint,
   AirQuality,
-  WeatherCacheEntry,
 } from "../../domain/types";
 
 export interface WeatherCacheResult<T = any> {
@@ -14,12 +14,19 @@ export interface WeatherCacheResult<T = any> {
   expiresAt: number;
 }
 
+type WeatherCacheStoreName =
+  | "weather_now"
+  | "weather_hourly"
+  | "weather_daily"
+  | "air_quality"
+  | "weather_yesterday_hourly";
+
 /**
  * IndexedDB 기반 날씨 데이터 캐시 관리 클래스
  * TTL 기반 캐시 관리 및 SWR 패턴을 지원합니다.
  */
 export class IndexedDbWeatherCache {
-  private db: ModooDB | null = null;
+  private db: IDBPDatabase<ModooDB> | null = null;
 
   // TTL 설정 (분 단위)
   private readonly TTL_MINUTES = {
@@ -45,7 +52,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<WeatherNow> | null> {
-    return this.getCacheEntry("weather_now", locationId, baseTime);
+    return this.getCacheEntry("weather_now", [locationId, baseTime]);
   }
 
   /**
@@ -71,7 +78,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<WeatherHourlyPoint[]> | null> {
-    return this.getCacheEntry("weather_hourly", locationId, baseTime);
+    return this.getCacheEntry("weather_hourly", [locationId, baseTime]);
   }
 
   /**
@@ -96,10 +103,9 @@ export class IndexedDbWeatherCache {
   async getDaily(
     locationId: string,
     baseTime: number,
-    _type?: "short" | "mid" // 현재 구현에서는 사용하지 않음
+    type: "short" | "mid" = "short"
   ): Promise<WeatherCacheResult<WeatherDailyPoint[]> | null> {
-    // type 파라미터는 현재 사용하지 않음
-    return this.getCacheEntry("weather_daily", locationId, baseTime);
+    return this.getCacheEntry("weather_daily", [locationId, type, baseTime]);
   }
 
   /**
@@ -117,6 +123,7 @@ export class IndexedDbWeatherCache {
 
     await this.setCacheEntry("weather_daily", {
       locationId,
+      type,
       baseTime,
       data,
       expiresAt,
@@ -133,7 +140,7 @@ export class IndexedDbWeatherCache {
     locationId: string,
     baseTime: number
   ): Promise<WeatherCacheResult<AirQuality> | null> {
-    return this.getCacheEntry("air_quality", locationId, baseTime);
+    return this.getCacheEntry("air_quality", [locationId, baseTime]);
   }
 
   /**
@@ -157,9 +164,9 @@ export class IndexedDbWeatherCache {
    */
   async getYesterdayHourly(
     locationId: string,
-    date: string
+    baseTime: number
   ): Promise<WeatherCacheResult<WeatherHourlyPoint[]> | null> {
-    return this.getCacheEntry("weather_yesterday_hourly", locationId, date);
+    return this.getCacheEntry("weather_yesterday_hourly", [locationId, baseTime]);
   }
 
   /**
@@ -167,13 +174,13 @@ export class IndexedDbWeatherCache {
    */
   async setYesterdayHourly(
     locationId: string,
-    date: string,
+    baseTime: number,
     data: WeatherHourlyPoint[]
   ): Promise<void> {
     const expiresAt = Date.now() + this.TTL_MINUTES.yesterdayHourly * 60 * 1000;
     await this.setCacheEntry("weather_yesterday_hourly", {
       locationId,
-      baseTime: date,
+      baseTime,
       data,
       expiresAt,
     });
@@ -220,7 +227,13 @@ export class IndexedDbWeatherCache {
     if (!this.db) await this.init();
 
     const now = Date.now();
-    const stores = ["weather_now", "weather_hourly", "weather_daily", "air_quality"] as const;
+    const stores = [
+      "weather_now",
+      "weather_hourly",
+      "weather_daily",
+      "air_quality",
+      "weather_yesterday_hourly",
+    ] as const;
 
     try {
       for (const storeName of stores) {
@@ -229,7 +242,7 @@ export class IndexedDbWeatherCache {
         const index = store.index("byExpiresAt");
 
         let deletedCount = 0;
-        for await (const cursor of index.iterate(null, IDBKeyRange.upperBound(now))) {
+        for await (const cursor of index.iterate(IDBKeyRange.upperBound(now))) {
           await cursor.delete();
           deletedCount++;
         }
@@ -260,7 +273,7 @@ export class IndexedDbWeatherCache {
       | "weather_yesterday_hourly"
     >,
     locationId: string,
-    _maxCount: number = this.MAX_DAYS_PER_LOCATION
+    maxCount: number = this.MAX_DAYS_PER_LOCATION
   ): Promise<void> {
     if (!this.db) await this.init();
 
@@ -269,27 +282,24 @@ export class IndexedDbWeatherCache {
       const store = tx.objectStore(storeName);
       const index = store.index("byLocationId");
 
-      // 해당 위치의 모든 데이터를 baseTime 내림차순으로 조회
-      const allEntries: Array<{ key: [string, number]; value: WeatherCacheEntry }> = [];
+      const allKeys: Array<{ key: IDBValidKey; baseTime: number }> = [];
       for await (const cursor of index.iterate(locationId)) {
-        allEntries.push({
-          key: cursor.primaryKey as [string, number],
-          value: cursor.value as WeatherCacheEntry,
-        });
+        const value = cursor.value as { baseTime: number };
+        allKeys.push({ key: cursor.primaryKey, baseTime: value.baseTime });
       }
 
-      // baseTime 기준 내림차순 정렬 (최신 데이터가 먼저)
-      allEntries.sort((a, b) => b.key[1] - a.key[1]);
+      allKeys.sort((a, b) => b.baseTime - a.baseTime);
 
-      // 제한 수를 초과하는 오래된 데이터 삭제
-      if (allEntries.length > this.MAX_DAYS_PER_LOCATION) {
-        const toDelete = allEntries.slice(this.MAX_DAYS_PER_LOCATION);
+      if (allKeys.length > maxCount) {
+        const toDelete = allKeys.slice(maxCount);
         for (const entry of toDelete) {
-          await store.delete(entry.key);
+          await store.delete(entry.key as any);
         }
-        console.log(
-          `Enforced retention limit: deleted ${toDelete.length} old entries from ${storeName} for location ${locationId}`
-        );
+        if (import.meta.env.DEV) {
+          console.log(
+            `Enforced retention limit: deleted ${toDelete.length} old entries from ${storeName} for location ${locationId}`
+          );
+        }
       }
 
       await tx.done;
@@ -301,33 +311,24 @@ export class IndexedDbWeatherCache {
   /**
    * 캐시 엔트리 조회 (공통)
    */
-  private async getCacheEntry<T>(
-    storeName: keyof Pick<
-      ModooDB,
-      | "weather_now"
-      | "weather_hourly"
-      | "weather_daily"
-      | "air_quality"
-      | "weather_yesterday_hourly"
-    >,
-    locationId: string,
-    baseTime: number | string
+  private async getCacheEntry<StoreName extends WeatherCacheStoreName, T>(
+    storeName: StoreName,
+    key: ModooDB[StoreName]["key"]
   ): Promise<WeatherCacheResult<T> | null> {
     if (!this.db) await this.init();
 
     try {
-      // 키 생성
-      const key = [locationId, baseTime];
       const entry = await this.db!.get(storeName, key);
       if (!entry) return null;
 
       const now = Date.now();
-      const isStale = entry.expiresAt <= now;
+      const typed = entry as unknown as { data: T; expiresAt: number };
+      const isStale = typed.expiresAt <= now;
 
       return {
-        data: entry.data,
+        data: typed.data,
         isStale,
-        expiresAt: entry.expiresAt,
+        expiresAt: typed.expiresAt,
       };
     } catch (error) {
       console.warn(`Failed to get cache entry from ${storeName}:`, error);
@@ -338,16 +339,9 @@ export class IndexedDbWeatherCache {
   /**
    * 캐시 엔트리 저장 (공통)
    */
-  private async setCacheEntry(
-    storeName: keyof Pick<
-      ModooDB,
-      | "weather_now"
-      | "weather_hourly"
-      | "weather_daily"
-      | "air_quality"
-      | "weather_yesterday_hourly"
-    >,
-    entry: WeatherCacheEntry
+  private async setCacheEntry<StoreName extends WeatherCacheStoreName>(
+    storeName: StoreName,
+    entry: ModooDB[StoreName]["value"]
   ): Promise<void> {
     if (!this.db) await this.init();
 

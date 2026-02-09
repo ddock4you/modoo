@@ -20,6 +20,11 @@ type MutationParams = {
 type MutationResult = {
   plantId: string;
   coverPhotoId: string | null;
+  photoUpload?: {
+    uploaded: number;
+    failed: number;
+    failedNames: string[];
+  };
 };
 
 type MutationOptions = UseMutationOptions<MutationResult, Error, MutationParams>;
@@ -44,18 +49,42 @@ export function usePlantWizardMutation(options?: MutationOptions) {
       }
 
       let coverPhotoId: string | null = null;
+      let photoUpload: MutationResult["photoUpload"] | undefined;
 
       if (step3.files.length > 0 && media) {
-        const uploadedIds: string[] = [];
-        for (let i = 0; i < step3.files.length; i++) {
-          const photoMeta = await media.savePhoto(step3.files[i], plant.id);
-          await storage.upsertPhoto(photoMeta);
-          uploadedIds.push(photoMeta.id);
+        const results = await Promise.allSettled(
+          step3.files.map(async (file) => {
+            const photoMeta = await media.savePhoto(file, plant.id);
+            await storage.upsertPhoto(photoMeta);
+            return photoMeta.id;
+          })
+        );
+
+        const uploadedByIndex: Array<string | null> = results.map((r) =>
+          r.status === "fulfilled" ? r.value : null
+        );
+
+        const failedNames: string[] = [];
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].status === "rejected") {
+            failedNames.push(step3.files[i]?.name || `photo_${i + 1}`);
+          }
         }
 
-        if (step3.coverIndex !== null && uploadedIds[step3.coverIndex]) {
-          coverPhotoId = uploadedIds[step3.coverIndex];
-        } else if (uploadedIds.length > 0) {
+        const uploadedIds = uploadedByIndex.filter((x): x is string => typeof x === "string");
+
+        photoUpload = {
+          uploaded: uploadedIds.length,
+          failed: failedNames.length,
+          failedNames,
+        };
+
+        if (step3.coverIndex !== null) {
+          const desired = uploadedByIndex[step3.coverIndex];
+          coverPhotoId = desired ?? null;
+        }
+
+        if (!coverPhotoId && uploadedIds.length > 0) {
           coverPhotoId = uploadedIds[0];
         }
       }
@@ -73,7 +102,7 @@ export function usePlantWizardMutation(options?: MutationOptions) {
       queryClient.invalidateQueries({ queryKey: PLANTS_QK.taskRules() });
       queryClient.invalidateQueries({ queryKey: PLANTS_QK.dueTasks() });
 
-      return { plantId: plant.id, coverPhotoId };
+      return { plantId: plant.id, coverPhotoId, photoUpload };
     },
   });
 }

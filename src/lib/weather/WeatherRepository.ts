@@ -179,6 +179,12 @@ export class WeatherRepository implements IWeatherRepository {
     return yesterday.toISOString().slice(0, 10);
   }
 
+  private kstYmdToMidnightBaseTime(ymd: string): number {
+    const [y, m, d] = ymd.split("-").map((x) => Number(x));
+    const kstOffset = 9 * 60 * 60 * 1000;
+    return Date.UTC(y, m - 1, d, 0, 0, 0, 0) - kstOffset;
+  }
+
   /**
    * 현재 날씨 데이터 조회
    */
@@ -484,8 +490,9 @@ export class WeatherRepository implements IWeatherRepository {
 
     try {
       // 어제 날짜 계산 (KST 기준)
-      const yesterday = date || this.getYesterdayDateString();
-      const cached = await weatherCache.getYesterdayHourly(locationId, yesterday);
+      const yesterdayYmd = date || this.getYesterdayDateString();
+      const yesterdayBaseTime = this.kstYmdToMidnightBaseTime(yesterdayYmd);
+      const cached = await weatherCache.getYesterdayHourly(locationId, yesterdayBaseTime);
 
       if (cached && !cached.isStale) {
         return cached.data;
@@ -516,17 +523,18 @@ export class WeatherRepository implements IWeatherRepository {
       }
 
       // 어제 시간별 데이터를 API로 조회
-      const yesterdayHourly = await this.kmaProvider.getHourlyForecast24h(location, yesterday);
+      const yesterdayHourly = await this.kmaProvider.getHourlyForecast24h(location, yesterdayYmd);
       if (yesterdayHourly) {
-        await weatherCache.setYesterdayHourly(locationId, yesterday, yesterdayHourly);
+        await weatherCache.setYesterdayHourly(locationId, yesterdayBaseTime, yesterdayHourly);
       }
 
       return yesterdayHourly;
     } catch (error) {
       console.error("Failed to get yesterday hourly weather:", error);
       try {
-        const yesterday = date || this.getYesterdayDateString();
-        const cached = await weatherCache.getYesterdayHourly(locationId, yesterday);
+        const yesterdayYmd = date || this.getYesterdayDateString();
+        const yesterdayBaseTime = this.kstYmdToMidnightBaseTime(yesterdayYmd);
+        const cached = await weatherCache.getYesterdayHourly(locationId, yesterdayBaseTime);
         return cached?.data || null;
       } catch (cacheError) {
         console.error("Failed to get cached yesterday hourly weather:", cacheError);
@@ -629,14 +637,15 @@ export class WeatherRepository implements IWeatherRepository {
     const dailyBaseTime = this.normalizeBaseTime(Date.now(), "daily");
     const airQualityBaseTime = this.normalizeBaseTime(Date.now(), "airQuality");
 
-    const [now, hourly, daily, airQuality] = await Promise.all([
+    const [now, hourly, dailyShort, dailyMid, airQuality] = await Promise.all([
       weatherCache.getNow(locationId, nowBaseTime),
       weatherCache.getHourly(locationId, hourlyBaseTime),
-      weatherCache.getDaily(locationId, dailyBaseTime),
+      weatherCache.getDaily(locationId, dailyBaseTime, "short"),
+      weatherCache.getDaily(locationId, dailyBaseTime, "mid"),
       weatherCache.getAirQuality(locationId, airQualityBaseTime),
     ]);
 
-    return !!(now || hourly || daily || airQuality);
+    return !!(now || hourly || dailyShort || dailyMid || airQuality);
   }
 
   /**

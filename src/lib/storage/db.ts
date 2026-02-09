@@ -285,8 +285,8 @@ let dbInstance: IDBPDatabase<ModooDB> | null = null;
 export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
   if (dbInstance) return dbInstance;
 
-  // 버전 5로 설정 (어제 날씨 시간별 캐시 스토어 추가)
-  dbInstance = await openDB<ModooDB>("modoo", 5, {
+  // 버전 6로 설정 (weather_daily key 스키마 정렬)
+  dbInstance = await openDB<ModooDB>("modoo", 6, {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     upgrade(db, oldVersion, newVersion, _transaction) {
       console.log(`Upgrading DB from ${oldVersion} to ${newVersion}`);
@@ -371,10 +371,11 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
 
         // Weather Daily store
         const weatherDailyStore = db.createObjectStore("weather_daily", {
-          keyPath: ["locationId", "baseTime"],
+          keyPath: ["locationId", "type", "baseTime"],
         });
         weatherDailyStore.createIndex("byExpiresAt", "expiresAt");
         weatherDailyStore.createIndex("byLocationId", "locationId");
+        weatherDailyStore.createIndex("byType", "type");
 
         // Air Quality store
         const airQualityStore = db.createObjectStore("air_quality", {
@@ -404,6 +405,25 @@ export async function initDB(): Promise<IDBPDatabase<ModooDB>> {
         weatherYesterdayHourlyStore.createIndex("byLocationId", "locationId");
 
         console.log("Successfully upgraded to database version 5");
+      }
+
+      // 버전 6: weather_daily 키 스키마 정렬 (type 포함)
+      if (oldVersion >= 4 && oldVersion < 6) {
+        console.log("Upgrading to version 6: Aligning weather_daily key schema");
+
+        // 기존 store는 [locationId, baseTime]으로 생성되어 있었으므로 재생성 필요
+        if (db.objectStoreNames.contains("weather_daily")) {
+          db.deleteObjectStore("weather_daily");
+        }
+
+        const weatherDailyStore = db.createObjectStore("weather_daily", {
+          keyPath: ["locationId", "type", "baseTime"],
+        });
+        weatherDailyStore.createIndex("byExpiresAt", "expiresAt");
+        weatherDailyStore.createIndex("byLocationId", "locationId");
+        weatherDailyStore.createIndex("byType", "type");
+
+        console.log("Successfully upgraded to database version 6");
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

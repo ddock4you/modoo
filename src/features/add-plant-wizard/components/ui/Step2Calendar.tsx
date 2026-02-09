@@ -1,7 +1,7 @@
 import { DayPicker } from "react-day-picker";
 import { ko } from "react-day-picker/locale";
 import { Button } from "@/components/ui/button";
-import { formatYmd } from "@/features/add-plant-wizard/utils/dateUtils";
+import { formatYmd, getKstTodayYmd } from "@/features/add-plant-wizard/utils/dateUtils";
 import HintIllustration from "@/assets/illustrations/illust2.png";
 import "react-day-picker/style.css";
 
@@ -19,6 +19,8 @@ export function Step2Calendar({
   onRemoveDate,
   onSubmit,
 }: Step2CalendarProps) {
+  const todayYmd = getKstTodayYmd();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="px-7 pt-5 pb-9 bg-[#EEF8F5] rounded-b-[20px] flex flex-col gap-5">
@@ -37,7 +39,7 @@ export function Step2Calendar({
             modifiersClassNames={{
               sunday: "text-red-500", // 일요일 빨간색
             }}
-            disabled={{ after: new Date() }}
+            disabled={(date) => formatYmd(date) > todayYmd}
             classNames={{
               // 전체 캘린더 컨테이너 - 중앙 정렬, 최대 너비 제한
               root: `rdp-root bg-white p-4 sm:p-6 relative ${

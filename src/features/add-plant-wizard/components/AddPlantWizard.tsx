@@ -29,6 +29,17 @@ export function AddPlantWizard() {
   const mutation = usePlantWizardMutation({
     onSuccess: (result) => {
       console.log("Plant creation succeeded, closing modal. Result:", result);
+
+      if (result.photoUpload && result.photoUpload.failed > 0) {
+        const names = result.photoUpload.failedNames.slice(0, 3).join(", ");
+        const more = result.photoUpload.failedNames.length > 3 ? "..." : "";
+        alert(
+          `사진 ${result.photoUpload.failed}장 저장에 실패했어요.\n` +
+            `나중에 사진을 다시 추가할 수 있어요.\n` +
+            `실패한 파일: ${names}${more}`
+        );
+      }
+
       resetAllForms();
       reset();
       close();

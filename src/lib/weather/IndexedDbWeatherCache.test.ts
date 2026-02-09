@@ -125,4 +125,53 @@ describe("IndexedDbWeatherCache", () => {
       expect(typeof cache.cleanupExpiredCache).toBe("function");
     });
   });
+
+  describe("key schema alignment", () => {
+    const deleteDb = async () => {
+      await new Promise<void>((resolve, reject) => {
+        const req = indexedDB.deleteDatabase("modoo");
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+        req.onblocked = () => resolve();
+      });
+    };
+
+    beforeEach(async () => {
+      await deleteDb();
+    });
+
+    it("should store daily cache separately by type", async () => {
+      const cache = new IndexedDbWeatherCache();
+      await cache.init();
+
+      const locationId = "loc";
+      const baseTime = 123456;
+
+      const shortData = [{ date: "2026-02-09", minC: 1, maxC: 2 }] as const;
+      const midData = [{ date: "2026-02-13", minC: 3, maxC: 4 }] as const;
+
+      await cache.setDaily(locationId, baseTime, [...shortData], "short");
+      await cache.setDaily(locationId, baseTime, [...midData], "mid");
+
+      const shortCached = await cache.getDaily(locationId, baseTime, "short");
+      const midCached = await cache.getDaily(locationId, baseTime, "mid");
+
+      expect(shortCached?.data).toEqual([...shortData]);
+      expect(midCached?.data).toEqual([...midData]);
+    });
+
+    it("should use numeric baseTime for yesterdayHourly cache", async () => {
+      const cache = new IndexedDbWeatherCache();
+      await cache.init();
+
+      const locationId = "loc";
+      const baseTime = 1700000000000;
+
+      const data = [{ time: "2026-02-09T00:00:00.000Z", tempC: 1 }];
+      await cache.setYesterdayHourly(locationId, baseTime, data);
+
+      const cached = await cache.getYesterdayHourly(locationId, baseTime);
+      expect(cached?.data).toEqual(data);
+    });
+  });
 });
