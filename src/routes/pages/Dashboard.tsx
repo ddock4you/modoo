@@ -1,12 +1,12 @@
 import { Link } from "react-router-dom";
-import { ChevronRight } from "lucide-react";
+import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
 import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "@/lib/storage/useStorage";
 import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidget";
 import { VisualSection } from "@/components/dashboard-visual/VisualSection";
 import { RecommendedWateringSchedule } from "@/features/plants/components/watering-schedule/RecommendedWateringSchedule";
 import PlantsList from "@/features/plants/components/PlantsList";
-import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { plantsQueries } from "@/features/plants/api/queries";
 
 export function Dashboard() {
   const storage = useStorage();
@@ -17,8 +17,7 @@ export function Dashboard() {
     error: plantsError,
     refetch: refetchPlants,
   } = useQuery({
-    queryKey: PLANTS_QK.list(),
-    queryFn: () => storage.listPlants(),
+    ...plantsQueries.list(storage),
   });
 
   return (

@@ -6,6 +6,7 @@ import PlantsList from "./PlantsList";
 import { Button } from "../../../components/ui/button";
 import type { Plant, TaskRule } from "@/domain/types";
 import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { plantsQueries } from "@/features/plants/api/queries";
 
 export function PlantsTab() {
   const storage = useStorage();
@@ -17,14 +18,12 @@ export function PlantsTab() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: PLANTS_QK.list(),
-    queryFn: () => storage.listPlants(),
+    ...plantsQueries.list(storage),
   });
 
-  const { data: taskRules = [], isLoading: isRulesLoading } = useQuery<TaskRule[]>({
-    queryKey: PLANTS_QK.taskRules(),
-    queryFn: () => storage.listTaskRules(),
-  });
+  const { data: taskRules = [], isLoading: isRulesLoading } = useQuery<TaskRule[]>(
+    plantsQueries.taskRules(storage)
+  );
 
   // 필터링 적용
   const { filters, filteredPlants, updateFilters, resetFilters } = usePlantFilters(

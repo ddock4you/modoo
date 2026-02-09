@@ -1,42 +1,9 @@
-import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getDB } from "../../lib/storage/db";
-
-type StoreName = "plants" | "taskRules" | "taskEvents" | "photos" | "settings";
-
-interface StoreInfo {
-  name: StoreName;
-  count: number;
-  indexes: string[];
-}
-
-// DEV 전용 가드 컴포넌트
-function DevGuard({ children }: { children: React.ReactNode }) {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const isDev = import.meta.env.DEV;
-  const hasDevParam = searchParams.get("dev") === "1";
-
-  useEffect(() => {
-    if (!isDev || !hasDevParam) {
-      navigate("/");
-    }
-  }, [isDev, hasDevParam, navigate]);
-
-  if (!isDev || !hasDevParam) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">접근 거부</h1>
-          <p className="text-gray-600">개발 모드에서만 접근할 수 있습니다.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
+import { DevGuard } from "./_debug/DevGuard";
+import type { StoreInfo, StoreName } from "./_debug/types";
+import { DEBUG_QK } from "./_debug/queryKeys";
 
 export function DebugDb() {
   // const storage = useStorage(); // 현재 사용하지 않음
@@ -49,7 +16,7 @@ export function DebugDb() {
 
   // 스토어 정보 조회
   const { data: storesInfo = [], isLoading: storesLoading } = useQuery({
-    queryKey: ["debug-stores-info"],
+    queryKey: DEBUG_QK.storesInfo(),
     queryFn: async (): Promise<StoreInfo[]> => {
       const db = getDB();
       if (!db) throw new Error("Database not initialized");
@@ -92,21 +59,31 @@ export function DebugDb() {
 
   // 선택된 스토어의 데이터 조회
   const { data: storeData = [], isLoading: dataLoading } = useQuery({
-    queryKey: ["debug-store-data", selectedStore, offset, limit],
-    queryFn: async (): Promise<any[]> => {
+    queryKey: DEBUG_QK.storeData(selectedStore, offset, limit),
+    queryFn: async (): Promise<unknown[]> => {
       const db = getDB();
       if (!db) throw new Error("Database not initialized");
 
       const tx = db.transaction(selectedStore, "readonly");
       const store = tx.objectStore(selectedStore);
 
-      // getAll with offset/limit simulation
-      const allData = await store.getAll();
-      const start = offset;
-      const end = offset + limit;
+      // Cursor-based pagination (avoid getAll for large stores)
+      const items: unknown[] = [];
+      let cursor = await store.openCursor();
+      let skipped = 0;
+
+      while (cursor && skipped < offset) {
+        skipped += 1;
+        cursor = await cursor.continue();
+      }
+
+      while (cursor && items.length < limit) {
+        items.push(cursor.value);
+        cursor = await cursor.continue();
+      }
 
       await tx.done;
-      return allData.slice(start, end);
+      return items;
     },
   });
 
@@ -119,7 +96,7 @@ export function DebugDb() {
       await db.put(selectedStore, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["debug-store-data"] });
+      queryClient.invalidateQueries({ queryKey: DEBUG_QK.all() });
       setEditMode(null);
       setEditData("");
     },
@@ -134,8 +111,7 @@ export function DebugDb() {
       await db.delete(selectedStore, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["debug-store-data"] });
-      queryClient.invalidateQueries({ queryKey: ["debug-stores-info"] });
+      queryClient.invalidateQueries({ queryKey: DEBUG_QK.all() });
     },
   });
 

@@ -1,34 +1,6 @@
-import { useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { DevGuard } from "./_debug/DevGuard";
 import { WaterIcon, FertilizerIcon, Plant, TaskIcon } from "../../components/icons";
 import type { IconProps } from "../../components/icons";
-
-// DEV 전용 가드 컴포넌트
-function DevGuard({ children }: { children: React.ReactNode }) {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const isDev = import.meta.env.DEV;
-  const hasDevParam = searchParams.get("dev") === "1";
-
-  useEffect(() => {
-    if (!isDev || !hasDevParam) {
-      navigate("/");
-    }
-  }, [isDev, hasDevParam, navigate]);
-
-  if (!isDev || !hasDevParam) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">접근 거부</h1>
-          <p className="text-gray-600">개발 모드에서만 접근할 수 있습니다.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <>{children}</>;
-}
 
 // 아이콘 정의
 interface IconDefinition {
