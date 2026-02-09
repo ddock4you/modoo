@@ -1,4 +1,4 @@
-import type { StoreName } from "./types";
+import type { StoreName } from "../types";
 
 export const DEBUG_QK = {
   all: () => ["debug"] as const,

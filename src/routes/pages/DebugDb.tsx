@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getDB } from "../../lib/storage/db";
-import { DevGuard } from "./_debug/DevGuard";
-import type { StoreInfo, StoreName } from "./_debug/types";
-import { DEBUG_QK } from "./_debug/queryKeys";
+import { getDB } from "@/lib/storage/db";
+import { DevGuard } from "@/features/debug/components/DevGuard";
+import type { StoreInfo, StoreName } from "@/features/debug/types";
+import { DEBUG_QK } from "@/features/debug/api/queryKeys";
 
 export function DebugDb() {
   // const storage = useStorage(); // 현재 사용하지 않음

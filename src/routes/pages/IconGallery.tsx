@@ -1,6 +1,6 @@
-import { DevGuard } from "./_debug/DevGuard";
-import { WaterIcon, FertilizerIcon, Plant, TaskIcon } from "../../components/icons";
-import type { IconProps } from "../../components/icons";
+import { DevGuard } from "@/features/debug/components/DevGuard";
+import { WaterIcon, FertilizerIcon, Plant, TaskIcon } from "@/components/icons";
+import type { IconProps } from "@/components/icons";
 
 // 아이콘 정의
 interface IconDefinition {
