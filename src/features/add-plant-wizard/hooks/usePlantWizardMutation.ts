@@ -2,7 +2,7 @@ import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/
 import { useStorage } from "@/lib/storage/useStorage";
 import { useMedia } from "@/lib/media/useMedia";
 import type { Step1FormValues } from "../model";
-import type { Step2Data, Step3Data } from "../types";
+import type { AddPlantStep2Data, AddPlantStep3Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
 import type { Plant } from "@/domain/types";
 import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 import {
@@ -13,8 +13,8 @@ import {
 
 type MutationParams = {
   step1: Step1FormValues;
-  step2: Step2Data;
-  step3: Step3Data;
+  step2: AddPlantStep2Data;
+  step3: AddPlantStep3Data;
 };
 
 type MutationResult = {

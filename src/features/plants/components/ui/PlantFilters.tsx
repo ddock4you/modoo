@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, SlidersVertical } from "lucide-react";
-import { useAddPlantWizardActions } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions } from "@/lib/plants/add-plant-wizard/hooks";
 import { useDebounce } from "@/features/plants/utils";
 import type { PlantFilters } from "@/features/plants/types";
 import { Flowerpot } from "@/components/icons";

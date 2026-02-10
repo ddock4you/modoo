@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/add-plant-wizard/hooks";
 import { step1Schema, type Step1FormValues } from "../model";
 
 export function useStep1Wizard() {

@@ -1,4 +1,4 @@
-import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/add-plant-wizard/hooks";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -16,7 +16,7 @@ import { useStep1Wizard } from "@/features/add-plant-wizard/hooks/useStep1Wizard
 import { useStep2Wizard } from "@/features/add-plant-wizard/hooks/useStep2Wizard";
 import { useStep3Wizard } from "@/features/add-plant-wizard/hooks/useStep3Wizard";
 import { ArrowLeft } from "lucide-react";
-import type { AddPlantWizardStep } from "@/lib/plants/AddPlantWizardTypes";
+import type { AddPlantWizardStep } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
 import AddPlantIllustration from "@/assets/illustrations/illust1.png";
 export function AddPlantWizard() {
   const state = useAddPlantWizardState();

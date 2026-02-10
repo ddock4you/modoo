@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/add-plant-wizard/hooks";
 import { getImageSize } from "../utils/imageUtils";
 
 export function useStep3Wizard() {

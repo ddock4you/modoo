@@ -2,7 +2,7 @@ import type { Plant } from "@/domain/types";
 import { generateId } from "@/lib/utils/id";
 import type { TaskRule, TaskEvent } from "@/domain/types";
 import type { Step1FormValues } from "../model";
-import type { Step2Data } from "../types";
+import type { AddPlantStep2Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
 import { toKstMidnight, toKstNoon } from "./dateUtils";
 
 /**
@@ -44,7 +44,7 @@ export function createPlantFromStep1(step1: Step1FormValues, now: number = Date.
  */
 export function createTaskRuleFromSteps(
   step1: Step1FormValues,
-  step2: Step2Data,
+  step2: AddPlantStep2Data,
   plantId: string,
   now: number = Date.now()
 ): TaskRule {
@@ -80,7 +80,7 @@ export function createTaskRuleFromSteps(
  * Step2 데이터로부터 TaskEvent 배열 생성
  */
 export function createTaskEventsFromStep2(
-  step2: Step2Data,
+  step2: AddPlantStep2Data,
   plantId: string,
   now: number = Date.now()
 ): TaskEvent[] {
