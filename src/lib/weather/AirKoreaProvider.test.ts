@@ -160,7 +160,7 @@ describe("AirKoreaProvider", () => {
   describe("getAirQualityByLocation", () => {
     it("좌표로 대기질을 가져와야 함", async () => {
       // Mock coord import
-      vi.doMock("./coord", () => ({
+      vi.doMock("@/lib/weather/coord", () => ({
         latLonToTM: vi.fn(() => ({ tmX: 200000, tmY: 500000 })),
       }));
 

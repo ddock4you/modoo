@@ -1,24 +1,18 @@
 /**
- * AirKorea 수동 테스트 (브라우저 콘솔용)
- * 개발 중 실제 API 동작을 확인하기 위한 테스트 코드
+ * AirKorea manual tests (browser console)
  */
 
-// 실제 API 키는 .env에서 가져옴
 const API_KEY = import.meta.env.VITE_AIRKOREA_SERVICE_KEY;
 
 if (!API_KEY) {
   console.error("❌ VITE_AIRKOREA_SERVICE_KEY is not set in .env file");
 }
 
-/**
- * 기본 API 연결 테스트
- */
 export async function testApiConnection() {
   console.log("🔗 Testing AirKorea API connection...");
 
   try {
-    // 1. 근접 측정소 검색 테스트
-    const testTmX = 198000; // 서울 종로구 근처 TM 좌표
+    const testTmX = 198000;
     const testTmY = 451000;
 
     const params = new URLSearchParams({
@@ -44,7 +38,6 @@ export async function testApiConnection() {
       console.log("❌ Station API Error:", stationData.response?.header?.resultMsg);
     }
 
-    // 2. 대기질 데이터 조회 테스트
     if (stationData.response?.body?.items?.length > 0) {
       const nearestStation = stationData.response.body.items[0].stationName;
 
@@ -79,16 +72,11 @@ export async function testApiConnection() {
   }
 }
 
-/**
- * 좌표 변환 테스트
- */
 export async function testCoordinateConversion() {
   console.log("🗺️  Testing coordinate conversion...");
-
   try {
-    const { latLonToTM } = await import("./coord");
+    const { latLonToTM } = await import("@/lib/weather/coord");
 
-    // 서울 주요 좌표들 테스트
     const testCoords = [
       { name: "종로구", lat: 37.5665, lon: 126.9784 },
       { name: "강남구", lat: 37.5172, lon: 127.0473 },
@@ -99,16 +87,12 @@ export async function testCoordinateConversion() {
       const { tmX, tmY } = latLonToTM(coord.lat, coord.lon);
       console.log(`📍 ${coord.name}: (${coord.lat}, ${coord.lon}) → TM(${tmX}, ${tmY})`);
     }
-
     console.log("✅ Coordinate conversion test completed");
   } catch (error) {
     console.error("❌ Coordinate conversion test failed:", error);
   }
 }
 
-/**
- * 실시간 위치 기반 테스트
- */
 export async function testGeolocation() {
   console.log("📍 Testing geolocation and air quality lookup...");
 
@@ -123,9 +107,8 @@ export async function testGeolocation() {
       console.log(`📍 Current position: ${latitude}, ${longitude}`);
 
       try {
-        const { AirKoreaProvider } = await import("./AirKoreaProvider");
+        const { AirKoreaProvider } = await import("@/lib/weather/AirKoreaProvider");
         const provider = new AirKoreaProvider(API_KEY);
-
         const result = await provider.getAirQualityByLocation(latitude, longitude);
         console.log("✅ Air Quality Result:", result);
       } catch (error) {
@@ -138,17 +121,13 @@ export async function testGeolocation() {
   );
 }
 
-/**
- * 에러 처리 및 폴백 테스트
- */
 export async function testErrorHandling() {
   console.log("⚠️  Testing error handling and fallbacks...");
 
   try {
-    const { AirKoreaProvider } = await import("./AirKoreaProvider");
+    const { AirKoreaProvider } = await import("@/lib/weather/AirKoreaProvider");
     const provider = new AirKoreaProvider(API_KEY);
 
-    // 잘못된 좌표로 테스트
     console.log("Testing with invalid coordinates...");
     const invalidResult = await provider.getAirQualityByLocation(999, 999);
     console.log("✅ Fallback worked:", invalidResult);
@@ -157,28 +136,19 @@ export async function testErrorHandling() {
   }
 }
 
-/**
- * 모든 테스트 실행
- */
 export async function runAllManualTests() {
   console.log("🚀 Running all AirKorea manual tests...\n");
-
   await testCoordinateConversion();
   console.log("");
-
   await testApiConnection();
   console.log("");
-
   await testGeolocation();
   console.log("");
-
   await testErrorHandling();
   console.log("");
-
   console.log("✨ All manual tests completed!");
 }
 
-// 브라우저 콘솔에서 쉽게 접근할 수 있도록 전역 등록
 if (typeof window !== "undefined" && import.meta.env.DEV) {
   console.log("🧪 AirKorea Manual Tests loaded!");
   console.log("Available functions:");
