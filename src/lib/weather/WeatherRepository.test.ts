@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi, afterEach, beforeAll } from "vitest";
 import { WeatherRepository } from "./WeatherRepository";
 import { weatherCache } from "./IndexedDbWeatherCache";
+import { normalizeBaseTime } from "./utils/baseTime";
+import { generateLocationId } from "./repository/locationId";
 import type {
   WeatherNow,
   WeatherHourlyPoint,
@@ -112,13 +114,13 @@ describe("WeatherRepository", () => {
   describe("locationId 생성", () => {
     it("KMA 격자 기반으로 locationId를 생성해야 함", async () => {
       // 서울 시청 좌표 (약 nx=60, ny=127)
-      const locationId = (repository as any).generateLocationId(37.5665, 126.978);
+      const locationId = generateLocationId(37.5665, 126.978);
       expect(locationId).toMatch(/^grid_\d+_\d+$/);
     });
 
     it("동일한 격자의 좌표는 동일한 locationId를 생성해야 함", async () => {
-      const id1 = (repository as any).generateLocationId(37.5665, 126.978);
-      const id2 = (repository as any).generateLocationId(37.5666, 126.9781);
+      const id1 = generateLocationId(37.5665, 126.978);
+      const id2 = generateLocationId(37.5666, 126.9781);
       expect(id1).toBe(id2);
     });
   });
@@ -126,21 +128,21 @@ describe("WeatherRepository", () => {
   describe("baseTime 정규화", () => {
     it("현재 날씨는 10분 단위로 정규화해야 함", async () => {
       const now = new Date("2024-01-01T12:37:00").getTime();
-      const normalized = (repository as any).normalizeBaseTime(now, "now");
+      const normalized = normalizeBaseTime(now, "now");
       const expected = new Date("2024-01-01T12:30:00").getTime();
       expect(normalized).toBe(expected);
     });
 
     it("시간별 날씨는 시간 단위로 정규화해야 함", async () => {
       const now = new Date("2024-01-01T12:37:00").getTime();
-      const normalized = (repository as any).normalizeBaseTime(now, "hourly");
+      const normalized = normalizeBaseTime(now, "hourly");
       const expected = new Date("2024-01-01T12:00:00").getTime();
       expect(normalized).toBe(expected);
     });
 
     it("일별 날씨는 3시간 단위로 정규화해야 함", async () => {
       const now = new Date("2024-01-01T14:37:00").getTime();
-      const normalized = (repository as any).normalizeBaseTime(now, "daily");
+      const normalized = normalizeBaseTime(now, "daily");
       const expected = new Date("2024-01-01T12:00:00").getTime(); // 14시는 12시로 정규화 (3시간 단위)
       // WeatherRepository는 daily 캐시 키 버전업을 위해 baseTime에 +1ms 오프셋을 적용한다.
       expect(normalized).toBe(expected + 1);
@@ -172,10 +174,21 @@ describe("WeatherRepository", () => {
       // KMA 프로바이더 모킹
       const mockKmaProvider = {
         getCurrentWeather: vi.fn().mockResolvedValue(mockWeatherNow),
+        getHourlyForecast24h: vi.fn(),
+        getDailyForecast7d: vi.fn(),
       };
-      (repository as any).kmaProvider = mockKmaProvider;
 
-      const result = await repository.getNow("grid_60_127");
+      const repo = new WeatherRepository(
+        {
+          kmaApiKey: "test-kma-key",
+          airKoreaApiKey: "test-airkorea-key",
+          vworldApiKey: "test-vworld-key",
+        },
+        { kmaProvider: mockKmaProvider }
+      );
+      await repo.init();
+
+      const result = await repo.getNow("grid_60_127");
       expect(result).toEqual(mockWeatherNow);
 
       // 캐시 저장이 호출되었어야 함
@@ -194,10 +207,21 @@ describe("WeatherRepository", () => {
       // KMA 프로바이더 모킹 (실패)
       const mockKmaProvider = {
         getCurrentWeather: vi.fn().mockRejectedValue(new Error("API Error")),
+        getHourlyForecast24h: vi.fn(),
+        getDailyForecast7d: vi.fn(),
       };
-      (repository as any).kmaProvider = mockKmaProvider;
 
-      const result = await repository.getNow("grid_60_127");
+      const repo = new WeatherRepository(
+        {
+          kmaApiKey: "test-kma-key",
+          airKoreaApiKey: "test-airkorea-key",
+          vworldApiKey: "test-vworld-key",
+        },
+        { kmaProvider: mockKmaProvider }
+      );
+      await repo.init();
+
+      const result = await repo.getNow("grid_60_127");
       expect(result).toBeNull();
 
       cacheSpy.mockRestore();
@@ -262,20 +286,33 @@ describe("WeatherRepository", () => {
       // 캐시에 위치 정보가 없는 경우 모킹
       const cacheGetSpy = vi.spyOn(weatherCache, "getLocation").mockResolvedValue(null);
       const cacheSetSpy = vi.spyOn(weatherCache, "setLocation").mockResolvedValue(undefined);
+      const geoGetSpy = vi.spyOn(weatherCache, "getGeocodingAddress").mockResolvedValue(null);
+      const geoSetSpy = vi.spyOn(weatherCache, "setGeocodingAddress").mockResolvedValue(undefined);
 
       // VWorld 프로바이더 모킹
       const mockVWorldProvider = {
         reverseGeocode: vi.fn().mockResolvedValue("서울특별시 중구 명동"),
       };
-      (repository as any).vworldProvider = mockVWorldProvider;
 
-      const location = await repository.getOrCreateLocation(37.5665, 126.978);
+      const repo = new WeatherRepository(
+        {
+          kmaApiKey: "test-kma-key",
+          airKoreaApiKey: "test-airkorea-key",
+          vworldApiKey: "test-vworld-key",
+        },
+        { vworldProvider: mockVWorldProvider }
+      );
+      await repo.init();
+
+      const location = await repo.getOrCreateLocation(37.5665, 126.978);
       expect(location).toBeDefined();
       expect(location.id).toMatch(/^grid_\d+_\d+$/);
       expect(location.name).toBe("서울특별시 중구 명동");
 
       cacheGetSpy.mockRestore();
       cacheSetSpy.mockRestore();
+      geoGetSpy.mockRestore();
+      geoSetSpy.mockRestore();
     });
 
     it("역지오코딩 실패 시 기본 주소로 생성해야 함", async () => {
@@ -287,9 +324,18 @@ describe("WeatherRepository", () => {
       const mockVWorldProvider = {
         reverseGeocode: vi.fn().mockRejectedValue(new Error("Geocoding failed")),
       };
-      (repository as any).vworldProvider = mockVWorldProvider;
 
-      const location = await repository.getOrCreateLocation(37.5665, 126.978);
+      const repo = new WeatherRepository(
+        {
+          kmaApiKey: "test-kma-key",
+          airKoreaApiKey: "test-airkorea-key",
+          vworldApiKey: "test-vworld-key",
+        },
+        { vworldProvider: mockVWorldProvider }
+      );
+      await repo.init();
+
+      const location = await repo.getOrCreateLocation(37.5665, 126.978);
       expect(location).toBeDefined();
       expect(location.name).toMatch(/^\d+\.\d+, \d+\.\d+$/); // 좌표 형식
 
