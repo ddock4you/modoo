@@ -1,1 +1,1 @@
-export * from "./cache/IndexedDbWeatherCache";
+export * from "./indexeddb/IndexedDbWeatherCache";

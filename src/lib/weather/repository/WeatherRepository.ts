@@ -10,7 +10,7 @@ import type {
   WeatherLocation,
   WeatherNow,
 } from "@/domain/types";
-import { weatherCache } from "@/lib/weather/cache/IndexedDbWeatherCache";
+import { weatherCache } from "@/lib/weather/IndexedDbWeatherCache";
 import { AirKoreaProvider } from "@/lib/weather/providers/AirKoreaProvider";
 import { KmaWeatherProvider } from "@/lib/weather/providers/KmaWeatherProvider";
 import { VWorldGeocodingProvider } from "@/lib/weather/providers/VWorldGeocodingProvider";
