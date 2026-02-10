@@ -29,6 +29,11 @@ export interface StorageRepository {
   // Task Events
   listTaskEvents(plantId?: string, type?: "water"): Promise<TaskEvent[]>;
   logTaskEvent(event: TaskEvent): Promise<void>;
+  /**
+   * 백업/복원 등 관리 목적의 upsert
+   * (기존 id가 있으면 덮어쓰기)
+   */
+  upsertTaskEvent(event: TaskEvent): Promise<void>;
 
   // Photos
   listPhotos(plantId?: string): Promise<PhotoMeta[]>;
@@ -43,6 +48,12 @@ export interface StorageRepository {
   getPlantStatus(plantId: string, nowMs?: number): Promise<PlantStatusInfo>;
   getAllPlantsStatus(nowMs?: number): Promise<PlantStatusInfo[]>;
   getPlantsStatusStats(nowMs?: number): Promise<PlantsStatusStats>;
+
+  /**
+   * 백업 복원(overwrite)용 전체 데이터 삭제
+   * - 도메인 데이터 스토어를 모두 비웁니다.
+   */
+  clearAllDomainData(): Promise<void>;
 }
 
 export class IndexedDbRepository implements StorageRepository {
@@ -145,6 +156,10 @@ export class IndexedDbRepository implements StorageRepository {
     await this.db.add("taskEvents", event);
   }
 
+  async upsertTaskEvent(event: TaskEvent): Promise<void> {
+    await this.db.put("taskEvents", event);
+  }
+
   // Queries
   async getDueTasks(nowMs: number): Promise<Array<{ plant: Plant; rule: TaskRule }>> {
     const tx = this.db.transaction(["taskRules", "plants"], "readonly");
@@ -223,5 +238,22 @@ export class IndexedDbRepository implements StorageRepository {
   async getPlantsStatusStats(nowMs: number = Date.now()): Promise<PlantsStatusStats> {
     const statusInfos = await this.getAllPlantsStatus(nowMs);
     return calculatePlantsStatusStats(statusInfos);
+  }
+
+  async clearAllDomainData(): Promise<void> {
+    const tx = this.db.transaction(
+      ["plants", "taskRules", "taskEvents", "photos", "settings"],
+      "readwrite"
+    );
+
+    await Promise.all([
+      tx.objectStore("plants").clear(),
+      tx.objectStore("taskRules").clear(),
+      tx.objectStore("taskEvents").clear(),
+      tx.objectStore("photos").clear(),
+      tx.objectStore("settings").clear(),
+    ]);
+
+    await tx.done;
   }
 }

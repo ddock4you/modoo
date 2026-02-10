@@ -10,4 +10,4 @@ export type {
   BackupService,
 } from "./types";
 
-export { IndexedDBBackupService } from "./BackupService";
+export { IndexedDBBackupService } from "./IndexedDbBackupService";

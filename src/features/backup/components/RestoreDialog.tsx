@@ -91,7 +91,7 @@ export function RestoreDialog({ isOpen, onClose }: RestoreDialogProps) {
     setResult(null);
     restoreMutation.mutate({
       file: selectedFile,
-      options: { overwriteExisting: true }, // 항상 덮어쓰기 모드로 설정
+      options: { mode: "overwrite" }, // 항상 덮어쓰기 모드로 설정
     });
   };
 

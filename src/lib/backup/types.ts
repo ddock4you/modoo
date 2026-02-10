@@ -54,13 +54,22 @@ export interface RestoreProgress {
 export interface BackupOptions {
   includePhotos: boolean;
   filename?: string;
+  /**
+   * 백업 파일 내부 메타데이터에 기록할 앱 버전(표시용)
+   * 빌드 시스템과 연동되기 전까지는 선택적으로 받습니다.
+   */
+  appVersion?: string;
 }
 
 /**
  * 복원 옵션
  */
 export interface RestoreOptions {
-  overwriteExisting: boolean;
+  /**
+   * overwrite: 기존 데이터를 모두 지우고 백업 데이터로 교체
+   * merge: 기존 데이터 유지 + 백업 데이터를 upsert(동일 id는 덮어쓰기)
+   */
+  mode: "overwrite" | "merge";
   skipValidation?: boolean;
 }
 
@@ -69,8 +78,10 @@ export interface RestoreOptions {
  */
 export interface BackupResult {
   success: boolean;
+  blob?: Blob;
   filename?: string;
   size?: number;
+  format?: "json" | "zip";
   error?: string;
   metadata?: BackupMetadata;
 }

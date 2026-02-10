@@ -44,6 +44,22 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
     backupMutation.mutate({ includePhotos });
   };
 
+  const canDownload = Boolean(result?.success && result.blob && result.filename);
+
+  const handleDownload = () => {
+    if (!canDownload || !result?.blob || !result.filename) return;
+
+    const url = URL.createObjectURL(result.blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = result.filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
   const handleClose = () => {
     setProgress(null);
     setResult(null);
@@ -61,8 +77,8 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
           {!progress && !result && (
             <>
               <p className="text-gray-600 mb-4">
-                현재 앱의 모든 데이터를 백업합니다. 백업 파일은 브라우저의 다운로드 폴더에
-                저장됩니다.
+                현재 앱의 모든 데이터를 백업 파일로 생성합니다. 백업 완료 후 아래의
+                다운로드 버튼을 눌러 저장하세요.
               </p>
 
               <div className="space-y-3 mb-6">
@@ -100,7 +116,7 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
             </>
           )}
 
-          {progress && (
+          {progress && !result && (
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
@@ -117,6 +133,15 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
               {progress.currentItem && (
                 <p className="text-xs text-gray-500">현재 처리: {progress.currentItem}</p>
               )}
+
+              <button
+                type="button"
+                disabled
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg opacity-50 cursor-not-allowed"
+                aria-disabled="true"
+              >
+                백업 파일 다운로드 (완료 후 활성화)
+              </button>
             </div>
           )}
 
@@ -151,6 +176,15 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
                       <p>작업 규칙: {result.metadata.totalTaskRules}개</p>
                     </div>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    disabled={!canDownload}
+                    className="w-full mt-4 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    백업 파일 다운로드
+                  </button>
                 </div>
               ) : (
                 <div className="text-center">
