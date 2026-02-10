@@ -9,6 +9,7 @@ import type {
   WeatherHourlyPoint,
   WeatherDailyPoint,
 } from "../../domain/types";
+import { fetchJson } from "@/lib/weather/utils/http";
 
 // KMA API 응답 타입 정의
 interface KmaApiResponse<T> {
@@ -147,8 +148,7 @@ export class KmaWeatherProvider {
 
     const url = `${this.baseUrl}/VilageFcstInfoService_2.0/getUltraSrtNcst?${params}`;
 
-    const response = await fetch(url);
-    const data: KmaApiResponse<UltraSrtNcstItem> = await response.json();
+    const data = await fetchJson<KmaApiResponse<UltraSrtNcstItem>>(url);
 
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`KMA API Error: ${data.response?.header?.resultMsg || "Unknown error"}`);
@@ -185,8 +185,7 @@ export class KmaWeatherProvider {
 
     const ultraUrl = `${this.baseUrl}/VilageFcstInfoService_2.0/getUltraSrtFcst?${ultraParams}`;
 
-    const ultraResponse = await fetch(ultraUrl);
-    const ultraData: KmaApiResponse<UltraSrtFcstItem> = await ultraResponse.json();
+    const ultraData = await fetchJson<KmaApiResponse<UltraSrtFcstItem>>(ultraUrl);
     // debug log removed (too noisy in prod)
 
     if (ultraData.response?.header?.resultCode !== "00") {
@@ -227,8 +226,7 @@ export class KmaWeatherProvider {
     });
 
     const vilageUrl = `${this.baseUrl}/VilageFcstInfoService_2.0/getVilageFcst?${vilageParams}`;
-    const vilageResponse = await fetch(vilageUrl);
-    const vilageData: KmaApiResponse<VilageFcstItem> = await vilageResponse.json();
+    const vilageData = await fetchJson<KmaApiResponse<VilageFcstItem>>(vilageUrl);
 
     if (vilageData.response?.header?.resultCode !== "00") {
       throw new Error(`KMA VilageFcst API Error: ${vilageData.response?.header?.resultMsg}`);
@@ -261,8 +259,7 @@ export class KmaWeatherProvider {
 
     const url = `${this.baseUrl}/VilageFcstInfoService_2.0/getVilageFcst?${params}`;
 
-    const response = await fetch(url);
-    const data: KmaApiResponse<VilageFcstItem> = await response.json();
+    const data = await fetchJson<KmaApiResponse<VilageFcstItem>>(url);
     // debug log removed (too noisy in prod)
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`KMA VilageFcst API Error: ${data.response?.header?.resultMsg}`);
@@ -328,8 +325,7 @@ export class KmaWeatherProvider {
 
     const url = `${this.baseUrl}/MidFcstInfoService/getMidTa?${params}`;
 
-    const response = await fetch(url);
-    const data: KmaApiResponse<MidTaItem> = await response.json();
+    const data = await fetchJson<KmaApiResponse<MidTaItem>>(url);
 
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`KMA MidTa API Error: ${data.response?.header?.resultMsg}`);
@@ -364,8 +360,7 @@ export class KmaWeatherProvider {
 
     const url = `${this.baseUrl}/MidFcstInfoService/getMidLandFcst?${params}`;
 
-    const response = await fetch(url);
-    const data: KmaApiResponse<MidLandFcstItem> = await response.json();
+    const data = await fetchJson<KmaApiResponse<MidLandFcstItem>>(url);
 
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`KMA MidLandFcst API Error: ${data.response?.header?.resultMsg}`);
@@ -521,8 +516,7 @@ export class KmaWeatherProvider {
       const url = `${this.baseUrl}/VilageFcstInfoService_2.0/getVilageFcst?${params}`;
 
       try {
-        const response = await fetch(url);
-        const data: KmaApiResponse<VilageFcstItem> = await response.json();
+        const data = await fetchJson<KmaApiResponse<VilageFcstItem>>(url);
 
         if (data.response?.header?.resultCode === "00") {
           const items = data.response?.body?.items?.item || [];

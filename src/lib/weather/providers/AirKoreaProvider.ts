@@ -4,6 +4,7 @@
  */
 
 import type { AirQuality } from "@/domain/types";
+import { fetchJson } from "@/lib/weather/utils/http";
 
 interface AirKoreaApiResponse<T> {
   response: {
@@ -98,8 +99,7 @@ export class AirKoreaProvider {
 
     const url = `${this.baseUrl}/MsrstnInfoInqireSvc/getNearbyMsrstnList?${params}`;
 
-    const response = await fetch(url);
-    const data: AirKoreaApiResponse<NearbyStationItem> = await response.json();
+    const data = await fetchJson<AirKoreaApiResponse<NearbyStationItem>>(url);
 
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`AirKorea API Error: ${data.response?.header?.resultMsg || "Unknown error"}`);
@@ -132,8 +132,7 @@ export class AirKoreaProvider {
 
     const url = `${this.baseUrl}/ArpltnInforInqireSvc/getMsrstnAcctoRltmMesureDnsty?${params}`;
 
-    const response = await fetch(url);
-    const data: AirKoreaApiResponse<MeasurementItem> = await response.json();
+    const data = await fetchJson<AirKoreaApiResponse<MeasurementItem>>(url);
 
     if (data.response?.header?.resultCode !== "00") {
       throw new Error(`AirKorea API Error: ${data.response?.header?.resultMsg || "Unknown error"}`);

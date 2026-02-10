@@ -5,6 +5,7 @@
 
 import { initDB } from "@/lib/storage/db";
 import { idbUpperBound } from "@/lib/weather/utils/idb";
+import { fetchJson } from "@/lib/weather/utils/http";
 
 interface VWorldApiResponse {
   response: {
@@ -65,12 +66,8 @@ export class VWorldGeocodingProvider {
     });
 
     const url = `${this.baseUrl}?${params.toString()}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`VWorld API error: ${response.status} ${response.statusText}`);
-    }
 
-    const data: VWorldApiResponse = await response.json();
+    const data = await fetchJson<VWorldApiResponse>(url);
     if (data.response.status !== "OK") {
       throw new Error(`VWorld API status error: ${data.response.status}`);
     }
