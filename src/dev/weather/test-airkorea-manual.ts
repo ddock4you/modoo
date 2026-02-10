@@ -109,7 +109,11 @@ export async function testGeolocation() {
       try {
         const { AirKoreaProvider } = await import("@/lib/weather/AirKoreaProvider");
         const provider = new AirKoreaProvider(API_KEY);
-        const result = await provider.getAirQualityByLocation(latitude, longitude);
+        const { latLonToTM } = await import("@/lib/weather/coord");
+        const { tmX, tmY } = latLonToTM(latitude, longitude);
+        const stations = await provider.getNearbyStations(tmX, tmY);
+        const nearest = stations.slice().sort((a, b) => a.distance - b.distance)[0];
+        const result = await provider.getAirQuality(nearest.name);
         console.log("✅ Air Quality Result:", result);
       } catch (error) {
         console.error("❌ Geolocation test failed:", error);
@@ -129,8 +133,18 @@ export async function testErrorHandling() {
     const provider = new AirKoreaProvider(API_KEY);
 
     console.log("Testing with invalid coordinates...");
-    const invalidResult = await provider.getAirQualityByLocation(999, 999);
-    console.log("✅ Fallback worked:", invalidResult);
+    const { latLonToTM } = await import("@/lib/weather/coord");
+
+    try {
+      const { tmX, tmY } = latLonToTM(999, 999);
+      const stations = await provider.getNearbyStations(tmX, tmY);
+      const nearest = stations.slice().sort((a, b) => a.distance - b.distance)[0];
+      const invalidResult = await provider.getAirQuality(nearest.name);
+      console.log("✅ Unexpected success:", invalidResult);
+    } catch {
+      const fallbackResult = await provider.getAirQuality("종로구");
+      console.log("✅ Fallback worked:", fallbackResult);
+    }
   } catch (error) {
     console.error("❌ Error handling test failed:", error);
   }

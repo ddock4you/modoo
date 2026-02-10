@@ -13,6 +13,7 @@ import { getLatestCacheEntry, getLatestDailyByType } from "./latest";
 import { enforceRetentionLimit } from "./retention";
 import { cleanupExpiredCache } from "./cleanupExpired";
 import { getExpiresAt, WEATHER_CACHE_TTL_MINUTES } from "./ttl";
+import { idbUpperBound } from "@/lib/weather/utils/idb";
 
 /**
  * IndexedDB 기반 날씨 데이터 캐시
@@ -165,6 +166,79 @@ export class IndexedDbWeatherCache {
   async cleanupExpiredCache(): Promise<void> {
     const db = await this.getDb();
     await cleanupExpiredCache(db, Date.now(), import.meta.env.DEV);
+  }
+
+  async getGeocodingAddress(
+    lat: number,
+    lon: number
+  ): Promise<WeatherCacheResult<string> | null> {
+    const db = await this.getDb();
+    try {
+      const cacheKey = this.makeGeocodingKey(lat, lon);
+      const entry = await db.get("weather_geocoding_cache", cacheKey);
+      if (!entry) return null;
+
+      const isStale = entry.expiresAt <= Date.now();
+      return {
+        data: entry.address,
+        isStale,
+        expiresAt: entry.expiresAt,
+      };
+    } catch (error) {
+      console.warn("Failed to get cached geocoding result:", error);
+      return null;
+    }
+  }
+
+  async setGeocodingAddress(lat: number, lon: number, address: string): Promise<void> {
+    const db = await this.getDb();
+    try {
+      const cacheKey = this.makeGeocodingKey(lat, lon);
+      const now = Date.now();
+      const expiresAt = getExpiresAt("geocoding", now);
+      await db.put("weather_geocoding_cache", {
+        key: cacheKey,
+        lat,
+        lon,
+        address,
+        createdAt: now,
+        expiresAt,
+      });
+    } catch (error) {
+      console.warn("Failed to cache geocoding result:", error);
+    }
+  }
+
+  async cleanupExpiredGeocodingCache(): Promise<void> {
+    const db = await this.getDb();
+    try {
+      const now = Date.now();
+      const tx = db.transaction("weather_geocoding_cache", "readwrite");
+      const index = tx.store.index("byExpiresAt");
+      const range = idbUpperBound(now);
+      if (!range) {
+        await tx.done;
+        return;
+      }
+
+      let deletedCount = 0;
+      for await (const cursor of index.iterate(range)) {
+        await cursor.delete();
+        deletedCount++;
+      }
+
+      await tx.done;
+
+      if (deletedCount > 0 && import.meta.env.DEV) {
+        console.log(`Cleaned up ${deletedCount} expired entries from weather_geocoding_cache`);
+      }
+    } catch (error) {
+      console.warn("Failed to cleanup expired geocoding cache:", error);
+    }
+  }
+
+  private makeGeocodingKey(lat: number, lon: number): string {
+    return `${lat.toFixed(6)},${lon.toFixed(6)}`;
   }
 
   private async enforceRetentionLimit<StoreName extends WeatherCacheStoreName>(

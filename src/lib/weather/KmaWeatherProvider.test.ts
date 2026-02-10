@@ -5,7 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { KmaWeatherProvider } from "./KmaWeatherProvider";
-import type { WeatherLocation } from "../../domain/types";
+import type { WeatherLocation } from "@/domain/types";
 
 describe("KmaWeatherProvider", () => {
   let provider: KmaWeatherProvider;

@@ -282,6 +282,7 @@ describe("WeatherRepository", () => {
       // 캐시 없음 + VWorld 실패 모킹
       const cacheGetSpy = vi.spyOn(weatherCache, "getLocation").mockResolvedValue(null);
       const cacheSetSpy = vi.spyOn(weatherCache, "setLocation").mockResolvedValue(undefined);
+      const geoGetSpy = vi.spyOn(weatherCache, "getGeocodingAddress").mockResolvedValue(null);
 
       const mockVWorldProvider = {
         reverseGeocode: vi.fn().mockRejectedValue(new Error("Geocoding failed")),
@@ -294,6 +295,7 @@ describe("WeatherRepository", () => {
 
       cacheGetSpy.mockRestore();
       cacheSetSpy.mockRestore();
+      geoGetSpy.mockRestore();
     });
   });
 

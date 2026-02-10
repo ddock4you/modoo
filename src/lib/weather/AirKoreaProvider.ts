@@ -1,1 +1,1 @@
-export * from "./providers/AirKoreaProvider";
+export * from "./clients/AirKoreaProvider";

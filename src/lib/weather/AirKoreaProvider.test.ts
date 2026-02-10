@@ -157,53 +157,6 @@ describe("AirKoreaProvider", () => {
     });
   });
 
-  describe("getAirQualityByLocation", () => {
-    it("좌표로 대기질을 가져와야 함", async () => {
-      // Mock coord import
-      vi.doMock("@/lib/weather/coord", () => ({
-        latLonToTM: vi.fn(() => ({ tmX: 200000, tmY: 500000 })),
-      }));
-
-      // Mock getNearbyStations
-      const mockStations = [
-        { name: "종로구", address: "서울 종로구", distance: 100, lat: 37.5665, lon: 126.9784 },
-      ];
-      vi.spyOn(provider, "getNearbyStations").mockResolvedValue(mockStations);
-
-      // Mock getAirQuality
-      const mockAirQuality = {
-        pm10: 25,
-        pm25: 15,
-        aqiKorea: "보통",
-        stationName: "종로구",
-        updatedAt: Date.now(),
-      };
-      vi.spyOn(provider, "getAirQuality").mockResolvedValue(mockAirQuality);
-
-      const result = await provider.getAirQualityByLocation(37.5665, 126.9784);
-
-      expect(provider.getNearbyStations).toHaveBeenCalledWith(200000, 500000);
-      expect(provider.getAirQuality).toHaveBeenCalledWith("종로구");
-      expect(result).toEqual(mockAirQuality);
-    });
-
-    it("실패 시 기본 측정소로 폴백해야 함", async () => {
-      vi.spyOn(provider, "getNearbyStations").mockRejectedValue(new Error("API error"));
-      vi.spyOn(provider, "getAirQuality").mockResolvedValue({
-        pm10: 20,
-        pm25: 10,
-        aqiKorea: "좋음",
-        stationName: "종로구",
-        updatedAt: Date.now(),
-      });
-
-      const result = await provider.getAirQualityByLocation(37.5665, 126.9784);
-
-      expect(provider.getAirQuality).toHaveBeenCalledWith("종로구");
-      expect(result.aqiKorea).toBe("좋음");
-    });
-  });
-
   describe("CAI grade mapping", () => {
     it("CAI 등급을 올바르게 매핑해야 함", async () => {
       const testCases = [

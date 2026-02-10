@@ -39,7 +39,8 @@ export async function runAirKoreaIntegrationTests() {
     console.log("");
 
     console.log("🎯 Test 3: Integrated Location-based Query");
-    const integratedResult = await provider.getAirQualityByLocation(seoulLat, seoulLon);
+    const nearestStation = stations.slice().sort((a, b) => a.distance - b.distance)[0];
+    const integratedResult = await provider.getAirQuality(nearestStation.name);
     console.log(`   ✅ Station: ${integratedResult.stationName}`);
     console.log(`   📊 PM10: ${integratedResult.pm10} µg/m³`);
     console.log(`   📊 PM2.5: ${integratedResult.pm25} µg/m³`);
@@ -49,7 +50,10 @@ export async function runAirKoreaIntegrationTests() {
     console.log("🏖️  Test 4: Different Location (Busan)");
     const busanLat = 35.1796;
     const busanLon = 129.0756;
-    const busanResult = await provider.getAirQualityByLocation(busanLat, busanLon);
+    const { tmX: busanTmX, tmY: busanTmY } = latLonToTM(busanLat, busanLon);
+    const busanStations = await provider.getNearbyStations(busanTmX, busanTmY);
+    const nearestBusanStation = busanStations.slice().sort((a, b) => a.distance - b.distance)[0];
+    const busanResult = await provider.getAirQuality(nearestBusanStation.name);
     console.log(`   ✅ Station: ${busanResult.stationName}`);
     console.log(`   📊 PM10: ${busanResult.pm10} µg/m³`);
     console.log(`   📊 PM2.5: ${busanResult.pm25} µg/m³`);
@@ -76,7 +80,11 @@ export async function runManualTests() {
 
         try {
           const provider = new AirKoreaProvider(API_KEY);
-          const result = await provider.getAirQualityByLocation(latitude, longitude);
+          const { latLonToTM } = await import("@/lib/weather/coord");
+          const { tmX, tmY } = latLonToTM(latitude, longitude);
+          const stations = await provider.getNearbyStations(tmX, tmY);
+          const nearest = stations.slice().sort((a, b) => a.distance - b.distance)[0];
+          const result = await provider.getAirQuality(nearest.name);
           console.log("✅ GPS-based result:", result);
         } catch (error) {
           console.error("❌ GPS test failed:", error);

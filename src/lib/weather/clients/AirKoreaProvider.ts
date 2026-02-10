@@ -42,7 +42,7 @@ interface MeasurementItem {
   no2Value: string;
 }
 
-interface Station {
+export interface AirKoreaStation {
   name: string;
   address: string;
   distance: number;
@@ -59,26 +59,6 @@ const CAI_GRADE_MAP = {
 
 type CaiGradeKey = keyof typeof CAI_GRADE_MAP;
 
-const FALLBACK_STATIONS = {
-  seoul: "종로구",
-  busan: "부산 북구",
-  daegu: "대구 중구",
-  incheon: "인천 중구",
-  gwangju: "광주 서구",
-  daejeon: "대전 서구",
-  ulsan: "울산 중구",
-  sejong: "세종시",
-  gyeonggi: "수원시",
-  gangwon: "춘천시",
-  chungbuk: "청주시",
-  chungnam: "천안시",
-  jeonbuk: "전주시",
-  jeonnam: "목포시",
-  gyeongbuk: "포항시",
-  gyeongnam: "창원시",
-  jeju: "제주시",
-} as const;
-
 export class AirKoreaProvider {
   private readonly baseUrl: string;
   private readonly apiKey: string;
@@ -88,7 +68,7 @@ export class AirKoreaProvider {
     this.apiKey = apiKey;
   }
 
-  async getNearbyStations(tmX: number, tmY: number): Promise<Station[]> {
+  async getNearbyStations(tmX: number, tmY: number): Promise<AirKoreaStation[]> {
     const params = new URLSearchParams({
       serviceKey: this.apiKey,
       returnType: "json",
@@ -162,42 +142,8 @@ export class AirKoreaProvider {
     };
   }
 
-  async getAirQualityByLocation(lat: number, lon: number): Promise<AirQuality> {
-    try {
-      // Keep dynamic import so tests can mock coordinate conversion.
-      const { latLonToTM } = await import("@/lib/weather/coord");
-      const { tmX, tmY } = latLonToTM(lat, lon);
-      const stations = await this.getNearbyStations(tmX, tmY);
-      if (stations.length === 0) {
-        throw new Error("No nearby air quality stations found");
-      }
-
-      const nearestStation = stations.slice().sort((a: Station, b: Station) => a.distance - b.distance)[0];
-      return await this.getAirQuality(nearestStation.name);
-    } catch (error) {
-      console.error("Failed to get air quality by location:", error);
-
-      try {
-        const fallbackStation = this.getFallbackStation(lat, lon);
-        return await this.getAirQuality(fallbackStation);
-      } catch {
-        return await this.getAirQuality(FALLBACK_STATIONS.seoul);
-      }
-    }
-  }
-
   private mapCaiGrade(grade: string): string {
     const gradeKey = grade as CaiGradeKey;
     return CAI_GRADE_MAP[gradeKey] || "알수없음";
-  }
-
-  private getFallbackStation(lat: number, lon: number): string {
-    if (lat >= 37.4 && lat <= 37.7 && lon >= 126.7 && lon <= 127.2) {
-      return FALLBACK_STATIONS.seoul;
-    }
-    if (lat >= 35.0 && lat <= 35.3 && lon >= 128.9 && lon <= 129.3) {
-      return FALLBACK_STATIONS.busan;
-    }
-    return FALLBACK_STATIONS.seoul;
   }
 }

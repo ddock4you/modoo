@@ -24,6 +24,7 @@ describe("IndexedDbWeatherCache", () => {
       expect(ttlConfig.shortTermDaily).toBe(6 * 60); // 6시간
       expect(ttlConfig.midTermDaily).toBe(12 * 60); // 12시간
       expect(ttlConfig.airQuality).toBe(60); // 60분
+      expect(ttlConfig.geocoding).toBe(30 * 24 * 60); // 30일
     });
 
     it("위치별 최대 보존 일수가 7일로 설정되어야 함", () => {
@@ -123,6 +124,11 @@ describe("IndexedDbWeatherCache", () => {
       expect(typeof cache.getLocation).toBe("function");
       expect(typeof cache.setLocation).toBe("function");
       expect(typeof cache.cleanupExpiredCache).toBe("function");
+
+      // Geocoding label cache
+      expect(typeof (cache as any).getGeocodingAddress).toBe("function");
+      expect(typeof (cache as any).setGeocodingAddress).toBe("function");
+      expect(typeof (cache as any).cleanupExpiredGeocodingCache).toBe("function");
     });
   });
 

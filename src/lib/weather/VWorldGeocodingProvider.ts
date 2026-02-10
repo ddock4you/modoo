@@ -1,1 +1,1 @@
-export * from "./providers/VWorldGeocodingProvider";
+export * from "./clients/VWorldGeocodingProvider";

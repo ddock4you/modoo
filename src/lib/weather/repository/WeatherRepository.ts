@@ -11,9 +11,9 @@ import type {
   WeatherNow,
 } from "@/domain/types";
 import { weatherCache } from "@/lib/weather/IndexedDbWeatherCache";
-import { AirKoreaProvider } from "@/lib/weather/providers/AirKoreaProvider";
-import { KmaWeatherProvider } from "@/lib/weather/providers/KmaWeatherProvider";
-import { VWorldGeocodingProvider } from "@/lib/weather/providers/VWorldGeocodingProvider";
+import { AirKoreaProvider } from "@/lib/weather/clients/AirKoreaProvider";
+import { KmaWeatherProvider } from "@/lib/weather/clients/kma/KmaWeatherProvider";
+import { VWorldGeocodingProvider } from "@/lib/weather/clients/VWorldGeocodingProvider";
 import { latLonToGrid } from "@/lib/weather/utils/kmaGrid";
 import { latLonToTM } from "@/lib/weather/utils/coord";
 import {
@@ -217,12 +217,50 @@ export class WeatherRepository implements IWeatherRepository {
       const location = await this.getLocationOrDefault(locationId);
       if (!location) return latest?.data ?? null;
 
-      const airQuality = await this.airKoreaProvider.getAirQualityByLocation(location.lat, location.lon);
+      const airQuality = await this.getAirQualityForLocation(location);
       await weatherCache.setAirQuality(locationId, baseTime, airQuality);
       return airQuality;
     } catch {
       return latest?.data ?? null;
     }
+  }
+
+  private async getAirQualityForLocation(location: WeatherLocation): Promise<AirQuality> {
+    try {
+      const stations = await this.airKoreaProvider.getNearbyStations(location.tmX, location.tmY);
+      if (stations.length === 0) {
+        throw new Error("No nearby air quality stations found");
+      }
+
+      let nearest = stations[0];
+      for (let i = 1; i < stations.length; i++) {
+        if (stations[i].distance < nearest.distance) nearest = stations[i];
+      }
+
+      return await this.airKoreaProvider.getAirQuality(nearest.name);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn("Failed to get air quality by location:", error);
+      }
+
+      try {
+        const fallbackStation = this.getFallbackStation(location.lat, location.lon);
+        return await this.airKoreaProvider.getAirQuality(fallbackStation);
+      } catch {
+        return await this.airKoreaProvider.getAirQuality("종로구");
+      }
+    }
+  }
+
+  private getFallbackStation(lat: number, lon: number): string {
+    // Keep minimal heuristics. If unknown, fall back to Seoul.
+    if (lat >= 37.4 && lat <= 37.7 && lon >= 126.7 && lon <= 127.2) {
+      return "종로구";
+    }
+    if (lat >= 35.0 && lat <= 35.3 && lon >= 128.9 && lon <= 129.3) {
+      return "부산 북구";
+    }
+    return "종로구";
   }
 
   async getYesterdayHourly(locationId: string, date?: string): Promise<WeatherHourlyPoint[] | null> {
@@ -267,8 +305,18 @@ export class WeatherRepository implements IWeatherRepository {
       return cached;
     }
 
+    const cachedGeocode = await weatherCache.getGeocodingAddress(lat, lon);
+
     try {
-      const address = await this.vworldProvider.reverseGeocode(lat, lon);
+      // If cache is fresh, don't call VWorld.
+      const address = cachedGeocode && !cachedGeocode.isStale
+        ? cachedGeocode.data
+        : await this.vworldProvider.reverseGeocode(lat, lon);
+
+      if (!cachedGeocode || cachedGeocode.isStale) {
+        await weatherCache.setGeocodingAddress(lat, lon, address);
+      }
+
       const { nx, ny } = latLonToGrid(lat, lon);
       const { tmX, tmY } = latLonToTM(lat, lon);
 
@@ -291,6 +339,8 @@ export class WeatherRepository implements IWeatherRepository {
       const { nx, ny } = latLonToGrid(lat, lon);
       const { tmX, tmY } = latLonToTM(lat, lon);
 
+      const fallbackName = cachedGeocode?.data || `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+
       const location: WeatherLocation = {
         id: locationId,
         lat,
@@ -300,7 +350,7 @@ export class WeatherRepository implements IWeatherRepository {
         tmX,
         tmY,
         timezone: "Asia/Seoul",
-        name: `${lat.toFixed(4)}, ${lon.toFixed(4)}`,
+        name: fallbackName,
         updatedAt: Date.now(),
       };
 
@@ -326,6 +376,7 @@ export class WeatherRepository implements IWeatherRepository {
   async cleanup(): Promise<void> {
     await this.init();
     await weatherCache.cleanupExpiredCache();
+    await weatherCache.cleanupExpiredGeocodingCache();
   }
 }
 
