@@ -25,14 +25,6 @@ export interface MediaStore {
   ): Promise<PhotoMeta>;
 
   /**
-   * 썸네일 생성
-   * @param originalUri 원본 사진 URI
-   * @param photoId 사진 ID
-   * @returns 썸네일 URI
-   */
-  createThumbnail(originalUri: string, photoId: string): Promise<string>;
-
-  /**
    * 원본 사진 URL 생성
    * @param photoId 사진 ID
    * @returns 브라우저에서 접근 가능한 URL
@@ -58,7 +50,7 @@ export interface MediaStore {
    * @param photoId 사진 ID
    * @returns 브라우저에서 접근 가능한 썸네일 URL
    */
-  getThumbnailUrl?(photoId: string): Promise<string>;
+  getThumbnailUrl(photoId: string): Promise<string>;
 
   /**
    * 사진 및 썸네일 삭제

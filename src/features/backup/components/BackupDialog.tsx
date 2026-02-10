@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useStorage } from "@/lib/storage/useStorage";
 import { useMedia } from "@/lib/media/useMedia";
-import { IndexedDBBackupService } from "@/lib/backup";
+import { IndexedDbBackupService } from "@/lib/backup";
 import type { BackupProgress, BackupResult, BackupOptions } from "@/lib/backup";
 
 interface BackupDialogProps {
@@ -24,7 +24,7 @@ export function BackupDialog({ isOpen, onClose }: BackupDialogProps) {
         throw new Error("저장소 서비스를 사용할 수 없습니다");
       }
 
-      const backupService = new IndexedDBBackupService(storage, media);
+      const backupService = new IndexedDbBackupService(storage, media);
       return backupService.createBackup(options, setProgress);
     },
     onSuccess: (data) => {

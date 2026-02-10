@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import { useMedia } from "@/lib/media/useMedia";
+import { useMediaThumbnailUrl } from "@/lib/media/useMediaThumbnailUrl";
 import type { PhotoMeta } from "@/domain/types";
 import { PhotoSkeleton } from "./PhotoSkeleton";
 
@@ -18,49 +17,7 @@ export function PhotoThumbnail({
   onSetCover?: () => void;
   isSettingCover?: boolean;
 }) {
-  const media = useMedia();
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const prevUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const load = async () => {
-      try {
-        const url = media.getThumbnailUrl ? await media.getThumbnailUrl(photo.id) : null;
-        if (!isMounted) return;
-
-        if (prevUrlRef.current?.startsWith("blob:")) {
-          URL.revokeObjectURL(prevUrlRef.current);
-        }
-        prevUrlRef.current = url;
-        setImageUrl(url);
-      } catch {
-        if (isMounted) {
-          setImageUrl(null);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    void load();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [media, photo.id]);
-
-  useEffect(() => {
-    return () => {
-      if (prevUrlRef.current?.startsWith("blob:")) {
-        URL.revokeObjectURL(prevUrlRef.current);
-      }
-    };
-  }, []);
+  const { url: imageUrl, isLoading } = useMediaThumbnailUrl(photo.id);
 
   if (isLoading) {
     return <PhotoSkeleton />;

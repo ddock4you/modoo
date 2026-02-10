@@ -17,7 +17,7 @@ import { validateBackupFile } from "./validateBackup";
 /**
  * 백업/복원 서비스 구현체 (IndexedDB + MediaStore)
  */
-export class IndexedDBBackupService implements BackupService {
+export class IndexedDbBackupService implements BackupService {
   private storage: StorageRepository;
   private media: MediaStore;
 

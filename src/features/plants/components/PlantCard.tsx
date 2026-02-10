@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
 import type { ReactNode } from "react";
-import { useEffect, useState, useRef } from "react";
 import clsx from "clsx";
 import PlantBadge from "./PlantBadge";
 import PlantStats from "./PlantStats";
-import { useMedia } from "../../../lib/media/useMedia";
+import { useMediaThumbnailUrl } from "@/lib/media/useMediaThumbnailUrl";
 import type { Plant } from "../../../domain/types";
 
 type AlertTone = "danger" | "warning" | "accent";
@@ -100,51 +99,7 @@ function PlantCardContent({
 }: PlantCardContentProps) {
   const isHorizontal = direction === "horizontal";
   const alertInfo = alertInfoByPlant(plant);
-  const media = useMedia();
-  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
-  const prevUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadPhotoUrl = async () => {
-      if (!plant.coverPhotoUri || !media) {
-        setCoverPhotoUrl(null);
-        return;
-      }
-
-      try {
-        const url = await media.getThumbnailUrl(plant.coverPhotoUri);
-        if (isMounted) {
-          if (prevUrlRef.current?.startsWith("blob:")) {
-            URL.revokeObjectURL(prevUrlRef.current);
-          }
-          prevUrlRef.current = url;
-          setCoverPhotoUrl(url);
-        }
-      } catch (error) {
-        console.warn("Failed to load plant photo:", error);
-        if (isMounted) {
-          setCoverPhotoUrl(null);
-        }
-      }
-    };
-
-    loadPhotoUrl();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [plant.coverPhotoUri, media]);
-
-  useEffect(() => {
-    return () => {
-      if (prevUrlRef.current?.startsWith("blob:")) {
-        URL.revokeObjectURL(prevUrlRef.current);
-      }
-    };
-  }, []);
-
+  const { url: coverPhotoUrl } = useMediaThumbnailUrl(plant.coverPhotoUri);
   const coverPhoto = coverPhotoUrl || placeholderImage;
 
   return (
