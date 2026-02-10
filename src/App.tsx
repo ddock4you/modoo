@@ -6,7 +6,7 @@ import { QueryProvider } from "./lib/query/QueryProvider";
 import { StorageProvider } from "./lib/storage/StorageProvider";
 import { MediaProvider } from "./lib/media/MediaProviders";
 import { WeatherProvider } from "./lib/weather/WeatherProvider";
-import { AddPlantWizardProvider } from "./lib/plants/AddPlantWizardContext";
+import { AddPlantWizardProvider } from "./lib/plants/AddPlantWizardProvider";
 import { AddPlantWizard } from "@/features/add-plant-wizard/components/AddPlantWizard";
 import "./App.css";
 import Footer from "./components/Footer";

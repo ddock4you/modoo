@@ -1,4 +1,4 @@
-import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,7 +19,8 @@ import { ArrowLeft } from "lucide-react";
 import type { AddPlantWizardStep } from "@/lib/plants/AddPlantWizardTypes";
 import AddPlantIllustration from "@/assets/illustrations/illust1.png";
 export function AddPlantWizard() {
-  const { state, close, setStep, reset } = useAddPlantWizard();
+  const state = useAddPlantWizardState();
+  const { close, setStep, reset } = useAddPlantWizardActions();
 
   // 모달을 닫고 모든 폼을 초기화하는 함수
   const closeWithReset = () => {
@@ -83,7 +84,7 @@ export function AddPlantWizard() {
   };
 
   const handleComplete = () => {
-    if (!state.step1 || !state.step2 || !state.step3) return;
+    if (!state.step1) return;
 
     mutation.mutate({
       step1: state.step1,

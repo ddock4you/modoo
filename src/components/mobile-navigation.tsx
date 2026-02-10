@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import { My } from "./icons/My";
 import { cn } from "@/lib/utils";
 import { Home, Plant, Weather, Watering, type IconProps } from "./icons";
-import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions } from "@/lib/plants/AddPlantWizardContext";
 
 export function MobileNavigation() {
   // const location = useLocation();
   const navRef = useRef<HTMLDivElement>(null);
-  const { open } = useAddPlantWizard();
+  const { open } = useAddPlantWizardActions();
 
   useEffect(() => {
     const updateHeight = () => {

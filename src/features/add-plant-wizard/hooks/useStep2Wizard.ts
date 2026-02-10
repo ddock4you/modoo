@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
+import { useEffect, useState } from "react";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
 import {
   formatYmd,
   getKstTodayYmd,
@@ -7,10 +7,16 @@ import {
 } from "@/features/add-plant-wizard/utils/dateUtils";
 
 export function useStep2Wizard() {
-  const { state, setStep2 } = useAddPlantWizard();
+  const state = useAddPlantWizardState();
+  const { setStep2 } = useAddPlantWizardActions();
   const [wateredDates, setWateredDates] = useState<Date[]>(
-    state.step2?.wateredDates?.map((d) => parseYmdToPickerDate(d)) ?? []
+    state.step2.wateredDates.map((d) => parseYmdToPickerDate(d))
   );
+
+  useEffect(() => {
+    if (state.isOpen) return;
+    setWateredDates(state.step2.wateredDates.map((d) => parseYmdToPickerDate(d)));
+  }, [state.isOpen, state.step2.wateredDates]);
 
   const handleDateSelect = (dates: Date[] | undefined) => {
     setWateredDates(dates ?? []);

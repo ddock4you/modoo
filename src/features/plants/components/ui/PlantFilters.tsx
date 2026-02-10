@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Search, SlidersVertical } from "lucide-react";
-import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
+import { useAddPlantWizardActions } from "@/lib/plants/AddPlantWizardContext";
 import { useDebounce } from "@/features/plants/utils";
 import type { PlantFilters } from "@/features/plants/types";
 import { Flowerpot } from "@/components/icons";
@@ -16,7 +16,7 @@ interface PlantFiltersProps {
 
 export function PlantFilters({ filters, onFiltersChange, onReset }: PlantFiltersProps) {
   const [searchQuery, setSearchQuery] = useState(filters.query);
-  const { open } = useAddPlantWizard();
+  const { open } = useAddPlantWizardActions();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   useEffect(() => {
@@ -25,6 +25,11 @@ export function PlantFilters({ filters, onFiltersChange, onReset }: PlantFilters
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
+  };
+
+  const handleReset = () => {
+    setSearchQuery("");
+    onReset();
   };
 
   return (
@@ -93,6 +98,13 @@ export function PlantFilters({ filters, onFiltersChange, onReset }: PlantFilters
             위험 식물만 보기
           </label>
         </div>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="text-sm font-medium text-muted-foreground"
+        >
+          초기화
+        </button>
       </div>
     </div>
   );

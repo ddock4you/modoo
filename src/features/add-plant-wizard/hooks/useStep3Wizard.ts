@@ -1,11 +1,18 @@
-import { useState } from "react";
-import { useAddPlantWizard } from "@/lib/plants/AddPlantWizardContext";
+import { useEffect, useState } from "react";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/AddPlantWizardContext";
 import { getImageSize } from "../utils/imageUtils";
 
 export function useStep3Wizard() {
-  const { state, setStep3 } = useAddPlantWizard();
-  const [files, setFiles] = useState<File[]>(state.step3?.files ?? []);
-  const [coverIndex, setCoverIndex] = useState<number | null>(state.step3?.coverIndex ?? null);
+  const state = useAddPlantWizardState();
+  const { setStep3 } = useAddPlantWizardActions();
+  const [files, setFiles] = useState<File[]>(state.step3.files);
+  const [coverIndex, setCoverIndex] = useState<number | null>(state.step3.coverIndex);
+
+  useEffect(() => {
+    if (state.isOpen) return;
+    setFiles(state.step3.files);
+    setCoverIndex(state.step3.coverIndex);
+  }, [state.isOpen, state.step3.coverIndex, state.step3.files]);
 
   const handleFilesSelected = async (fileList: FileList | null) => {
     if (!fileList) return;
