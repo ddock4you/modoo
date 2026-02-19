@@ -10,7 +10,6 @@ interface Step2CalendarProps {
   onDateSelect: (dates: Date[] | undefined) => void;
   onRemoveDate: (date: Date) => void;
   onSubmit: () => void;
-  onPrevious: () => void;
 }
 
 export function Step2Calendar({

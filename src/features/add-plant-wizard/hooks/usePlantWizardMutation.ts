@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
-import { useMedia } from "@/lib/media/useMedia";
-import type { Step1FormValues } from "../model";
-import type { AddPlantStep2Data, AddPlantStep3Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
 import type { Plant } from "@/domain/types";
 import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { useMedia } from "@/lib/media/useMedia";
+import type { AddPlantStep2Data, AddPlantStep3Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
+import { useStorage } from "@/lib/storage/useStorage";
+import type { Step1FormValues } from "../model";
 import {
   createPlantFromStep1,
-  createTaskRuleFromSteps,
   createTaskEventsFromStep2,
+  createTaskRuleFromSteps,
 } from "../utils/plantCreationUtils";
 
 type MutationParams = {
@@ -39,7 +39,7 @@ export function usePlantWizardMutation(options?: MutationOptions) {
     mutationFn: async ({ step1, step2, step3 }: MutationParams) => {
       const now = Date.now();
       const plant = createPlantFromStep1(step1, now);
-      const rule = createTaskRuleFromSteps(step1, step2, plant.id, now);
+      const rule = createTaskRuleFromSteps(step1, step2, plant.id, plant.adoptedAt, now);
       const events = createTaskEventsFromStep2(step2, plant.id, now);
 
       await storage.upsertPlant(plant);
@@ -60,14 +60,14 @@ export function usePlantWizardMutation(options?: MutationOptions) {
           })
         );
 
-        const uploadedByIndex: Array<string | null> = results.map((r) =>
-          r.status === "fulfilled" ? r.value : null
+        const uploadedByIndex: Array<string | null> = results.map((result) =>
+          result.status === "fulfilled" ? result.value : null
         );
 
         const failedNames: string[] = [];
-        for (let i = 0; i < results.length; i++) {
-          if (results[i].status === "rejected") {
-            failedNames.push(step3.files[i]?.name || `photo_${i + 1}`);
+        for (let index = 0; index < results.length; index += 1) {
+          if (results[index].status === "rejected") {
+            failedNames.push(step3.files[index]?.name || `photo_${index + 1}`);
           }
         }
 
@@ -101,6 +101,8 @@ export function usePlantWizardMutation(options?: MutationOptions) {
       queryClient.invalidateQueries({ queryKey: PLANTS_QK.list() });
       queryClient.invalidateQueries({ queryKey: PLANTS_QK.taskRules() });
       queryClient.invalidateQueries({ queryKey: PLANTS_QK.dueTasks() });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.statusAll() });
+      queryClient.invalidateQueries({ queryKey: PLANTS_QK.statusStats() });
 
       return { plantId: plant.id, coverPhotoId, photoUpload };
     },

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "@/lib/storage/useStorage";
 import type { PlantStatus, PlantStatusInfo, PlantsStatusStats } from "@/domain/types";
+import { PLANTS_QK } from "@/features/plants/api/queryKeys";
 
 export function usePlantStatus(
   plantId: string | undefined,
@@ -12,7 +13,7 @@ export function usePlantStatus(
   const storage = useStorage();
 
   return useQuery({
-    queryKey: ["plantStatus", plantId],
+    queryKey: PLANTS_QK.status(plantId ?? "unknown"),
     queryFn: async (): Promise<PlantStatusInfo> => {
       if (!plantId) {
         throw new Error("Plant ID is required");
@@ -28,7 +29,7 @@ export function useAllPlantsStatus(options?: { refetchInterval?: number; enabled
   const storage = useStorage();
 
   return useQuery({
-    queryKey: ["allPlantsStatus"],
+    queryKey: PLANTS_QK.statusAll(),
     queryFn: (): Promise<PlantStatusInfo[]> => storage.getAllPlantsStatus(),
     enabled: options?.enabled !== false,
     refetchInterval: options?.refetchInterval ?? 60000,
@@ -39,7 +40,7 @@ export function usePlantsStatusStats(options?: { refetchInterval?: number; enabl
   const storage = useStorage();
 
   return useQuery({
-    queryKey: ["plantsStatusStats"],
+    queryKey: PLANTS_QK.statusStats(),
     queryFn: (): Promise<PlantsStatusStats> => storage.getPlantsStatusStats(),
     enabled: options?.enabled !== false,
     refetchInterval: options?.refetchInterval ?? 60000,

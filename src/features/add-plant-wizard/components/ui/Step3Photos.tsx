@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import HintIllustration from "@/assets/illustrations/illust2.png";
 import { Info } from "lucide-react";
+import { useObjectUrls } from "@/features/add-plant-wizard/hooks/useObjectUrls";
 
 interface Step3PhotosProps {
   files: File[];
@@ -9,7 +10,6 @@ interface Step3PhotosProps {
   onFilesSelected: (fileList: FileList | null) => void;
   onCoverSelect: (index: number) => void;
   onSubmit: () => void;
-  onPrevious: () => void;
   disabled?: boolean;
 }
 
@@ -19,9 +19,10 @@ export function Step3Photos({
   onFilesSelected,
   onCoverSelect,
   onSubmit,
-  onPrevious,
   disabled,
 }: Step3PhotosProps) {
+  const objectUrls = useObjectUrls(files);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="px-7 pt-5 pb-9 bg-[#EEF8F5] rounded-b-[20px] flex flex-col gap-5">
@@ -41,7 +42,7 @@ export function Step3Photos({
               사진 추가
             </label>
             {files.map((file, index) => {
-              const url = URL.createObjectURL(file);
+              const url = objectUrls[index];
               const isCover = coverIndex === index;
               return (
                 <button
@@ -57,7 +58,6 @@ export function Step3Photos({
                     src={url}
                     alt="업로드한 사진"
                     className="h-full w-full object-cover"
-                    onLoad={() => URL.revokeObjectURL(url)}
                   />
                   {isCover && (
                     <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-xs text-white">
