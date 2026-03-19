@@ -1,4 +1,4 @@
-import { fetchJson } from "@/lib/weather/utils/http";
+import { fetchJson } from "@/lib/api/http";
 import type {
   KmaApiResponse,
   MidLandFcstItem,

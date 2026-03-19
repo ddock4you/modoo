@@ -4,7 +4,7 @@
  */
 
 import type { AirQuality } from "@/domain/types";
-import { fetchJson } from "@/lib/weather/utils/http";
+import { fetchJson } from "@/lib/api/http";
 
 interface AirKoreaApiResponse<T> {
   response: {

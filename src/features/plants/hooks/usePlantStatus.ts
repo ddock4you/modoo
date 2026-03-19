@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useStorage } from "@/lib/storage/useStorage";
 import type { PlantStatus, PlantStatusInfo, PlantsStatusStats } from "@/domain/types";
-import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 
 export function usePlantStatus(
   plantId: string | undefined,

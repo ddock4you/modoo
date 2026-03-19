@@ -8,7 +8,7 @@ import type {
 } from "@/domain/types";
 import { weatherRepository } from "@/lib/weather/WeatherRepository";
 import { WEATHER_QK } from "@/lib/weather/queryKeys";
-import { isHttpError } from "@/lib/weather/utils/http";
+import { isHttpError } from "@/lib/api/http";
 
 export function useWeatherQueries(locationId: string): {
   nowQuery: UseQueryResult<WeatherNow | null, unknown>;

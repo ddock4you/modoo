@@ -1,5 +1,5 @@
 import type { StorageRepository } from "@/lib/storage/StorageRepository";
-import { PLANTS_QK } from "./queryKeys";
+import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 
 export const plantsQueries = {
   list: (storage: StorageRepository, params?: { query?: string }) => ({

@@ -5,7 +5,7 @@ import { PlantFilters } from "./ui";
 import PlantsList from "./PlantsList";
 import { Button } from "../../../components/ui/button";
 import type { Plant, TaskRule } from "@/domain/types";
-import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 import { plantsQueries } from "@/features/plants/api/queries";
 
 export function PlantsTab() {

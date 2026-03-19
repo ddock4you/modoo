@@ -3,7 +3,7 @@
  * 좌표 → 주소 라벨 변환
  */
 
-import { fetchJson } from "@/lib/weather/utils/http";
+import { fetchJson } from "@/lib/api/http";
 
 interface VWorldApiResponse {
   response: {

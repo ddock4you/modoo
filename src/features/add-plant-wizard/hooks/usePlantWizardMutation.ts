@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
 import type { Plant } from "@/domain/types";
-import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 import { useMedia } from "@/lib/media/useMedia";
 import type { AddPlantStep2Data, AddPlantStep3Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
 import { useStorage } from "@/lib/storage/useStorage";

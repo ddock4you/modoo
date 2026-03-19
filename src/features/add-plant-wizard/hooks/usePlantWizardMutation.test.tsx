@@ -3,7 +3,7 @@ import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PhotoMeta } from "@/domain/types";
-import { PLANTS_QK } from "@/features/plants/api/queryKeys";
+import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 import type { StorageRepository } from "@/lib/storage/StorageRepository";
 import { usePlantWizardMutation } from "./usePlantWizardMutation";
 

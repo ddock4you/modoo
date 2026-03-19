@@ -7,11 +7,11 @@ import {
 import { useWeatherSummary, useWeatherFormat } from "@/features/weather/hooks/useWeather";
 import { useLocationSearch } from "@/features/weather/hooks/useLocationSearch";
 import visualFlowerImage from "@/assets/images/visual_flower.png";
-import { LocationSection } from "./LocationSection";
-import { MainMessageSection } from "./MainMessageSection";
-import { DonutChartSection } from "./DonutChartSection";
-import { WeatherSection } from "./WeatherSection";
-import { LastWateringSection } from "./LastWateringSection";
+import { LocationSection } from "@/components/dashboard-visual/LocationSection";
+import { MainMessageSection } from "@/components/dashboard-visual/MainMessageSection";
+import { DonutChartSection } from "@/components/dashboard-visual/DonutChartSection";
+import { WeatherSection } from "@/components/dashboard-visual/WeatherSection";
+import { LastWateringSection } from "@/components/dashboard-visual/LastWateringSection";
 /**
  * 마지막 물준 날짜를 계산하는 헬퍼 함수
  * 모든 식물의 물주기 이벤트 중 가장 최근 날짜를 반환
