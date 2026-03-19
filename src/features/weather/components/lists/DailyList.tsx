@@ -9,7 +9,7 @@ import {
   getWeatherIconName,
   getWeatherConditionText,
   getWeatherIconColor,
-} from "@/lib/weather/iconMap";
+} from "@/lib/weather/utils/iconMap";
 import * as Icons from "lucide-react";
 
 export interface DailyListProps {

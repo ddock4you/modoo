@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useWeatherContext } from "@/lib/weather/WeatherProvider";
-import { weatherRepository } from "@/lib/weather/WeatherRepository";
+import { useWeatherContext } from "@/providers/WeatherContext";
+import { weatherRepository } from "@/lib/weather/repository/fromEnv";
 
 export function useWeather() {
   const {

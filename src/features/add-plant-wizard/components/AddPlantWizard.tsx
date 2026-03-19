@@ -1,4 +1,4 @@
-import { useAddPlantWizardActions, useAddPlantWizardState } from "@/lib/plants/add-plant-wizard/hooks";
+import { useAddPlantWizardActions, useAddPlantWizardState } from "@/providers/useAddPlantWizard";
 import {
   AlertDialog,
   AlertDialogContent,

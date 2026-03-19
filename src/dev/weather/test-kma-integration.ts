@@ -2,7 +2,7 @@
  * KMA integration tests (real API) - dev only
  */
 
-import { KmaWeatherProvider } from "@/lib/weather/KmaWeatherProvider";
+import { KmaWeatherProvider } from "@/infrastructure/weather/clients/kma/KmaWeatherClient";
 import { expect } from "vitest";
 import type { WeatherDailyPoint, WeatherHourlyPoint, WeatherNow } from "@/domain/types";
 
@@ -152,7 +152,7 @@ export async function runManualTests() {
         console.log(`📍 Current position: ${latitude}, ${longitude}`);
 
         try {
-          const { latLonToGrid } = await import("@/lib/weather/kmaGrid");
+          const { latLonToGrid } = await import("@/lib/weather/utils/kmaGrid");
           const { nx, ny } = latLonToGrid(latitude, longitude);
           const currentLocation = {
             id: `${latitude},${longitude}`,

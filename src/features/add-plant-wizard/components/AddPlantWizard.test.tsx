@@ -10,7 +10,7 @@ const mockUseStep2Wizard = vi.fn();
 const mockUseStep3Wizard = vi.fn();
 const mockUsePlantWizardMutation = vi.fn();
 
-vi.mock("@/lib/plants/add-plant-wizard/hooks", () => ({
+vi.mock("@/providers/useAddPlantWizard", () => ({
   useAddPlantWizardState: () => mockUseAddPlantWizardState(),
   useAddPlantWizardActions: () => mockUseAddPlantWizardActions(),
 }));

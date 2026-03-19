@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
+import { useStorage } from "@/providers/useStorage";
 import type { PlantStatus, PlantStatusInfo, PlantsStatusStats } from "@/domain/types";
 import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 

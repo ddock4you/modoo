@@ -2,7 +2,7 @@
  * AirKorea integration tests (real API) - dev only
  */
 
-import { AirKoreaProvider } from "@/lib/weather/AirKoreaProvider";
+import { AirKoreaProvider } from "@/infrastructure/weather/clients/AirKoreaClient";
 
 const API_KEY = import.meta.env.VITE_AIRKOREA_SERVICE_KEY;
 
@@ -20,7 +20,7 @@ export async function runAirKoreaIntegrationTests() {
     const seoulLat = 37.5665;
     const seoulLon = 126.9784;
 
-    const { latLonToTM } = await import("@/lib/weather/coord");
+    const { latLonToTM } = await import("@/lib/weather/utils/coord");
     const { tmX, tmY } = latLonToTM(seoulLat, seoulLon);
     console.log(`   TM Coordinates: ${tmX}, ${tmY}`);
 
@@ -80,7 +80,7 @@ export async function runManualTests() {
 
         try {
           const provider = new AirKoreaProvider(API_KEY);
-          const { latLonToTM } = await import("@/lib/weather/coord");
+          const { latLonToTM } = await import("@/lib/weather/utils/coord");
           const { tmX, tmY } = latLonToTM(latitude, longitude);
           const stations = await provider.getNearbyStations(tmX, tmY);
           const nearest = stations.slice().sort((a, b) => a.distance - b.distance)[0];

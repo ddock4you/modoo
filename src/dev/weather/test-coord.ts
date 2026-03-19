@@ -2,8 +2,8 @@
  * Coordinate conversion dev scratch
  */
 
-import { latLonToGrid } from "@/lib/weather/kmaGrid";
-import { latLonToTM, tmToLatLon } from "@/lib/weather/coord";
+import { latLonToGrid } from "@/lib/weather/utils/kmaGrid";
+import { latLonToTM, tmToLatLon } from "@/lib/weather/utils/coord";
 
 const seoulLat = 37.5665;
 const seoulLon = 126.978;

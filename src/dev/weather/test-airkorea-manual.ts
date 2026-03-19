@@ -75,7 +75,7 @@ export async function testApiConnection() {
 export async function testCoordinateConversion() {
   console.log("🗺️  Testing coordinate conversion...");
   try {
-    const { latLonToTM } = await import("@/lib/weather/coord");
+    const { latLonToTM } = await import("@/lib/weather/utils/coord");
 
     const testCoords = [
       { name: "종로구", lat: 37.5665, lon: 126.9784 },
@@ -107,9 +107,9 @@ export async function testGeolocation() {
       console.log(`📍 Current position: ${latitude}, ${longitude}`);
 
       try {
-        const { AirKoreaProvider } = await import("@/lib/weather/AirKoreaProvider");
+        const { AirKoreaProvider } = await import("@/infrastructure/weather/clients/AirKoreaClient");
         const provider = new AirKoreaProvider(API_KEY);
-        const { latLonToTM } = await import("@/lib/weather/coord");
+        const { latLonToTM } = await import("@/lib/weather/utils/coord");
         const { tmX, tmY } = latLonToTM(latitude, longitude);
         const stations = await provider.getNearbyStations(tmX, tmY);
         const nearest = stations.slice().sort((a, b) => a.distance - b.distance)[0];
@@ -129,11 +129,11 @@ export async function testErrorHandling() {
   console.log("⚠️  Testing error handling and fallbacks...");
 
   try {
-    const { AirKoreaProvider } = await import("@/lib/weather/AirKoreaProvider");
+    const { AirKoreaProvider } = await import("@/infrastructure/weather/clients/AirKoreaClient");
     const provider = new AirKoreaProvider(API_KEY);
 
     console.log("Testing with invalid coordinates...");
-    const { latLonToTM } = await import("@/lib/weather/coord");
+    const { latLonToTM } = await import("@/lib/weather/utils/coord");
 
     try {
       const { tmX, tmY } = latLonToTM(999, 999);

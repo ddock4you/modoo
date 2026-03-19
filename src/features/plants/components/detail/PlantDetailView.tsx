@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
-import { useMedia } from "@/lib/media/useMedia";
+import { useStorage } from "@/providers/useStorage";
+import { useMedia } from "@/providers/useMedia";
 import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
 import { generateId } from "@/lib/utils/id";
 import type { PhotoMeta, Plant, TaskEvent, TaskRule } from "@/domain/types";

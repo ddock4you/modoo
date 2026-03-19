@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
 import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
+import { useStorage } from "@/providers/useStorage";
 import { WeatherWidget } from "@/features/weather/components/widget/WeatherWidget";
 import { VisualSection } from "./dashboard/VisualSection";
 import { RecommendedWateringSchedule } from "@/features/plants/components/watering-schedule/RecommendedWateringSchedule";

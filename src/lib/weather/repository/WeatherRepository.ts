@@ -4,10 +4,10 @@
  */
 
 import type { AirQuality, WeatherDailyPoint, WeatherHourlyPoint, WeatherLocation, WeatherNow } from "@/domain/types";
-import { weatherCache } from "@/lib/weather/IndexedDbWeatherCache";
-import { AirKoreaProvider } from "@/lib/weather/clients/AirKoreaProvider";
-import { KmaWeatherProvider } from "@/lib/weather/clients/kma/KmaWeatherProvider";
-import { VWorldGeocodingProvider } from "@/lib/weather/clients/VWorldGeocodingProvider";
+import { weatherCache } from "@/infrastructure/weather/cache/IndexedDbWeatherCache";
+import { AirKoreaProvider } from "@/infrastructure/weather/clients/AirKoreaClient";
+import { KmaWeatherProvider } from "@/infrastructure/weather/clients/kma/KmaWeatherClient";
+import { VWorldGeocodingProvider } from "@/infrastructure/weather/clients/VWorldGeocodingClient";
 import {
   getYesterdayKstYmd,
   kstYmdToMidnightBaseTime,

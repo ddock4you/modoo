@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
-import { useMedia } from "@/lib/media/useMedia";
+import { useStorage } from "@/providers/useStorage";
+import { useMedia } from "@/providers/useMedia";
 import { IndexedDbBackupService } from "@/lib/backup";
 import type { BackupProgress, BackupResult, BackupOptions } from "@/lib/backup";
 

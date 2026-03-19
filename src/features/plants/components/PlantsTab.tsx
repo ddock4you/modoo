@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
+import { useStorage } from "@/providers/useStorage";
 import { usePlantFilters, usePlantPagination } from "../hooks";
 import { PlantFilters } from "./ui";
 import PlantsList from "./PlantsList";

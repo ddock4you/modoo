@@ -2,7 +2,7 @@
  * PWA weather caching integration tests - dev only
  */
 
-import { weatherRepository } from "@/lib/weather/WeatherRepository";
+import { weatherRepository } from "@/lib/weather/repository/fromEnv";
 
 const TEST_LOCATION = {
   id: "test",

@@ -2,8 +2,8 @@
  * IndexedDbWeatherCache integration tests (browser console)
  */
 
-import { weatherCache } from "@/lib/weather/IndexedDbWeatherCache";
-import { initDB } from "@/lib/storage/db";
+import { weatherCache } from "@/infrastructure/weather/cache/IndexedDbWeatherCache";
+import { initDB } from "@/infrastructure/storage/db";
 import type {
   AirQuality,
   WeatherDailyPoint,

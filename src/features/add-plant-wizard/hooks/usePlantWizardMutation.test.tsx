@@ -10,11 +10,11 @@ import { usePlantWizardMutation } from "./usePlantWizardMutation";
 const mockUseStorage = vi.fn();
 const mockUseMedia = vi.fn();
 
-vi.mock("@/lib/storage/useStorage", () => ({
+vi.mock("@/providers/useStorage", () => ({
   useStorage: () => mockUseStorage(),
 }));
 
-vi.mock("@/lib/media/useMedia", () => ({
+vi.mock("@/providers/useMedia", () => ({
   useMedia: () => mockUseMedia(),
 }));
 

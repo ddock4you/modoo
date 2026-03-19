@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient, type UseMutationOptions } from "@tanstack/react-query";
 import type { Plant } from "@/domain/types";
 import { PLANTS_QK } from "@/lib/query/plantsQueryKeys";
-import { useMedia } from "@/lib/media/useMedia";
+import { useMedia } from "@/providers/useMedia";
 import type { AddPlantStep2Data, AddPlantStep3Data } from "@/lib/plants/add-plant-wizard/AddPlantWizardTypes";
-import { useStorage } from "@/lib/storage/useStorage";
+import { useStorage } from "@/providers/useStorage";
 import type { Step1FormValues } from "../model";
 import {
   createPlantFromStep1,

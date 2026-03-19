@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useStorage } from "@/lib/storage/useStorage";
+import { useStorage } from "@/providers/useStorage";
 import type { Plant, TaskRule } from "@/domain/types";
 import { ScheduleHeader } from "@/features/plants/components/watering-schedule/ScheduleHeader";
 import { ScheduleTimeline } from "@/features/plants/components/watering-schedule/ScheduleTimeline";

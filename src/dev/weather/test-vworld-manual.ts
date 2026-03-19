@@ -2,7 +2,7 @@
  * VWorld reverse geocoding manual tests (browser console)
  */
 
-import { VWorldGeocodingProvider } from "@/lib/weather/VWorldGeocodingProvider";
+import { VWorldGeocodingProvider } from "@/infrastructure/weather/clients/VWorldGeocodingClient";
 
 const API_KEY = import.meta.env.VITE_VWORLD_API_KEY;
 

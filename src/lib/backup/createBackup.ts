@@ -1,7 +1,7 @@
 import type { StorageRepository } from "../storage/StorageRepository";
 import type { MediaStore } from "../media/MediaStore";
 import type { BackupData, BackupOptions, BackupProgress, BackupResult } from "./types";
-import { createZipBackup } from "./zip";
+import { createZipBackup } from "@/infrastructure/backup/zip";
 import { buildMetadata, dateStamp } from "./utils";
 
 export async function createBackupFile(

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { WeatherProvider } from "@/lib/weather/WeatherProvider";
+import { WeatherProvider } from "@/providers/WeatherProvider";
 import {
   useWeather,
   useCurrentWeather,

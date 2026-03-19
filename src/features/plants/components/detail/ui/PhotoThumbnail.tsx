@@ -1,4 +1,4 @@
-import { useMediaThumbnailUrl } from "@/lib/media/useMediaThumbnailUrl";
+import { useMediaThumbnailUrl } from "@/providers/useMediaThumbnailUrl";
 import type { PhotoMeta } from "@/domain/types";
 import { PhotoSkeleton } from "./PhotoSkeleton";
 

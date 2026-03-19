@@ -19,19 +19,25 @@ React 19, React Router 7, Vite 7, TailwindCSS 4, TanStack Query 5, React Hook Fo
 ### 의존성 방향 (단방향, 역참조 금지)
 
 ```
-src/domain → src/lib → src/features → src/routes/pages
+domain → infrastructure → lib → features → pages
+                            ↑        ↑
+                        providers ───┘
 ```
 
 - `src/domain/*` — 순수 타입/유스케이스. React/브라우저/스토리지 의존 금지.
-- `src/lib/*` — 공유 인프라(IndexedDB, Query, Media, Weather 등). `src/features/*` import 금지.
+- `src/infrastructure/*` — IndexedDB 구현체, HTTP 클라이언트, 외부 API 클라이언트. `src/domain/*`만 import 가능.
+- `src/lib/*` — 인터페이스, 순수 로직, 오케스트레이션(Repository). `src/features/*` import 금지.
+- `src/providers/*` — React Provider/Context/hooks. `infrastructure`와 `lib`를 소비해 Context로 제공.
 - `src/features/*` — 기능 단위 캡슐화(components/hooks/api/model/types/utils). **feature 간 상호 import 금지.**
 - `src/routes/pages/*` — 페이지 오케스트레이션. feature 조합 및 데이터 로딩.
 - `src/components/*` — 앱 공통 UI. props 기반 렌더링. `src/features/*` import 금지.
 - `src/components/ui/*` — 저수준 UI primitives (shadcn/radix). 도메인 지식 없음.
 
-### lib vs features 구분
+### 계층 구분 기준
 
-- 외부 API, IndexedDB, 캐시/TTL, 브라우저 API 직접 → `src/lib/*`
+- IndexedDB 직접 접근, HTTP fetch, 외부 API 호출 → `src/infrastructure/*`
+- 인터페이스(Repository/Store 계약), 순수 로직, Query Keys → `src/lib/*`
+- React Provider/Context/hooks (앱 와이어링) → `src/providers/*`
 - 사용자 플로우, 특정 화면 전용 상태/검증, UI 컴포넌트 → `src/features/*`
 
 ### 파일 분리 기준
@@ -43,37 +49,51 @@ src/domain → src/lib → src/features → src/routes/pages
 
 ```
 src/
-├── domain/          순수 도메인 타입/유스케이스
-│   ├── types.ts     Plant/TaskRule/TaskEvent/PhotoMeta/PlantStatus 등
+├── domain/              순수 도메인 타입/유스케이스
+│   ├── types.ts         Plant/TaskRule/TaskEvent/PhotoMeta/PlantStatus 등
 │   └── plants/use-cases/  calculateNextDue, calculatePlantStatus
-├── lib/
-│   ├── storage/     IndexedDB Repository + Provider + migrations
-│   ├── media/       IndexedDB Blob 미디어 저장소
-│   ├── weather/     KMA/AirKorea/VWorld + IndexedDB 캐시 + Provider
-│   ├── query/       TanStack Query 클라이언트 + 공유 Query Keys
-│   ├── plants/      전역 Wizard 상태 (Provider/hook)
-│   ├── backup/      백업/복원 엔진
-│   └── utils/       공용 유틸 (id 생성 등)
+├── infrastructure/      구현체 (IndexedDB, HTTP, 외부 API)
+│   ├── api/             fetchJson, HttpError
+│   ├── storage/         IndexedDB 초기화/스키마/마이그레이션/Repository 구현
+│   ├── media/           IndexedDB Blob 미디어 저장소 구현
+│   ├── weather/
+│   │   ├── clients/     KMA/AirKorea/VWorld API 클라이언트
+│   │   └── cache/       IndexedDB 날씨 캐시
+│   └── backup/          ZIP 아카이브 처리
+├── lib/                 인터페이스 + 순수 로직
+│   ├── storage/         StorageRepository 인터페이스
+│   ├── media/           MediaStore 인터페이스 + constants
+│   ├── weather/
+│   │   ├── repository/  WeatherRepository 오케스트레이션 (clients+cache 조합)
+│   │   └── utils/       시간/좌표/아이콘 매핑 유틸
+│   ├── query/           Query Key factory + retry 로직
+│   ├── plants/          Wizard 상태 타입/초기값
+│   ├── backup/          백업/복원 서비스 + 스키마
+│   └── utils/           공용 유틸 (id 생성 등)
+├── providers/           React Provider/Context/hooks (플랫 구조)
+│   ├── QueryProvider, StorageProvider, MediaProvider
+│   ├── WeatherProvider + weather hooks
+│   └── AddPlantWizardProvider + wizard hooks
 ├── features/
-│   ├── plants/       식물 목록/상세/필터/상태
-│   ├── weather/      날씨 UI/차트/위젯
+│   ├── plants/          식물 목록/상세/필터/상태
+│   ├── weather/         날씨 UI/차트/위젯
 │   ├── add-plant-wizard/  3단계 식물 추가 모달
-│   ├── backup/       백업/복원 UI
-│   ├── media/        미디어 관련 UI
-│   └── debug/        개발 디버그 도구
-├── routes/pages/    페이지 컨테이너 (Dashboard, Plants, Weather, Settings 등)
-├── components/      앱 공통 UI (Header, Footer, Navigation, dashboard-visual)
-└── components/ui/   저수준 UI primitives
+│   ├── backup/          백업/복원 UI
+│   ├── media/           미디어 관련 UI
+│   └── debug/           개발 디버그 도구
+├── routes/pages/        페이지 컨테이너 (Dashboard, Plants, Weather, Settings 등)
+├── components/          앱 공통 UI (Header, Footer, Navigation, dashboard-visual)
+└── components/ui/       저수준 UI primitives
 ```
 
 ## 도메인 데이터 (단일 기준)
 
 - 도메인 타입: `src/domain/types.ts`
-- IndexedDB 스키마: `src/lib/storage/schema.ts`
-- 마이그레이션: `src/lib/storage/migrations.ts`
-- DB 초기화: `src/lib/storage/db.ts`
+- IndexedDB 스키마: `src/infrastructure/storage/schema.ts`
+- 마이그레이션: `src/infrastructure/storage/migrations.ts`
+- DB 초기화: `src/infrastructure/storage/db.ts`
 - Repository 인터페이스: `src/lib/storage/StorageRepository.ts`
-- Repository 구현: `src/lib/storage/IndexedDbRepository.ts`
+- Repository 구현: `src/infrastructure/storage/IndexedDbRepository.ts`
 
 스키마에 없는 필드: Plant의 `species`/`location`/`tags`, TaskRule/Event의 `fertilize` 등 다른 작업 타입
 
@@ -101,7 +121,9 @@ src/
 ## 테스트 배치
 
 - Unit (순수 로직): `src/domain/**/**.test.ts`
-- Integration (인프라/캐시): `src/lib/**/**.test.ts(x)`
+- Infrastructure (IndexedDB/API): `src/infrastructure/**/**.test.ts(x)`
+- Integration (오케스트레이션): `src/lib/**/**.test.ts(x)`
+- Provider: `src/providers/*.test.ts(x)`
 - UI (Component): `src/features/*/components/**/*.test.tsx`
 - E2E: `e2e/*`
 - 테스트 파일은 같은 폴더에 `*.test.ts(x)` 패턴으로 배치
@@ -114,7 +136,7 @@ src/
 4. **사진**: 자동 압축 (WebP, max 2MB, 85%), 썸네일 자동 생성 (512px, JPEG)
 5. **PWA**: vite-plugin-pwa로 오프라인 프리캐시. 정확한 알림은 하이브리드 단계
 6. **날씨**: KMA(기상청) + AirKorea(대기질) + VWorld(역지오코딩). IndexedDB 캐시 + SWR
-7. **하이브리드 확장**: Capacitor + 네이티브 SQLite/카메라/알림 (후속)
+7. **하이브리드 확장**: Capacitor + 네이티브 SQLite/카메라/알림 (후속). `infrastructure/` 구현체만 교체하면 됨
 8. **타입**: `any` 사용 금지. 코드베이스 내 정의된 타입 활용, 없으면 새로 정의
 
 ## 환경 변수
@@ -130,7 +152,7 @@ src/
 
 ### 날씨
 - `weather_daily` retention이 locationId 기준 "엔트리 N개"만 남기는 방식이라, mid(4~7일) 캐시가 먼저 제거되어 7일 예보 조합이 불안정해질 수 있음.
-  - 코드: `src/lib/weather/indexeddb/retention.ts`
+  - 코드: `src/infrastructure/weather/cache/retention.ts`
   - 개선 방향: store/type별 retention 정책 분리
 
 ## Provider 조립 순서 (src/App.tsx)

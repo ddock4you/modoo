@@ -2,7 +2,7 @@ import type { StorageRepository } from "../storage/StorageRepository";
 import type { MediaStore } from "../media/MediaStore";
 import type { BackupData, RestoreOptions, RestoreProgress, RestoreResult } from "./types";
 import { parseBackupData, safeParseBackupData } from "./schema";
-import { extractZipBackup } from "./zip";
+import { extractZipBackup } from "@/infrastructure/backup/zip";
 import { importBackupData } from "./importBackupData";
 
 export async function restoreBackupFromFile(

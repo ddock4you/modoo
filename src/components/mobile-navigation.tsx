@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { My } from "./icons/My";
 import { cn } from "@/lib/utils";
 import { Home, Plant, Weather, Watering, type IconProps } from "./icons";
-import { useAddPlantWizardActions } from "@/lib/plants/add-plant-wizard/hooks";
+import { useAddPlantWizardActions } from "@/providers/useAddPlantWizard";
 
 export function MobileNavigation() {
   // const location = useLocation();

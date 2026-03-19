@@ -1,5 +1,5 @@
-import { getDB } from "@/lib/storage/db";
-import type { ModooDB } from "@/lib/storage/db";
+import { getDB } from "@/infrastructure/storage/db";
+import type { ModooDB } from "@/infrastructure/storage/db";
 import type { StoreInfo, StoreName, DebugRow } from "../types";
 import { DEBUG_STORE_NAMES } from "../types";
 

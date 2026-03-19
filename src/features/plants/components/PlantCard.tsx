@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import clsx from "clsx";
 import PlantBadge from "./PlantBadge";
 import PlantStats from "./PlantStats";
-import { useMediaThumbnailUrl } from "@/lib/media/useMediaThumbnailUrl";
+import { useMediaThumbnailUrl } from "@/providers/useMediaThumbnailUrl";
 import type { Plant } from "../../../domain/types";
 
 type AlertTone = "danger" | "warning" | "accent";
