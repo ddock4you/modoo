@@ -71,7 +71,9 @@ pnpm test:e2e         # Playwright E2E
 
 - `src/routes/`: 라우터 및 페이지 컨테이너 (`AppRouter`, `pages/*`, `MobileGuard`)
 - `src/features/`: 기능 단위 모듈 (plants, weather, add-plant-wizard, backup, debug)
-- `src/lib/`: 인프라 계층 (storage, media, weather, query, backup)
+- `src/infrastructure/`: IndexedDB 구현체, HTTP 클라이언트, 외부 API 클라이언트
+- `src/lib/`: 인터페이스, 순수 로직, 오케스트레이션
+- `src/providers/`: React Provider/Context/hooks
 - `src/domain/`: 순수 도메인 타입/유스케이스
 - `src/components/`: 앱 공통 UI 컴포넌트
 - `src/components/ui/`: 저수준 UI primitives
@@ -81,8 +83,8 @@ pnpm test:e2e         # Playwright E2E
 
 ## 참고
 
-- 날씨 모듈 단일 기준: `src/lib/weather/*`, `src/features/weather/*`
-- 저장소/스키마 단일 기준: `src/lib/storage/schema.ts`, `src/lib/storage/migrations.ts`, `src/lib/storage/db.ts`
+- 날씨 모듈: `src/infrastructure/weather/*` (클라이언트/캐시), `src/lib/weather/*` (오케스트레이션/유틸), `src/features/weather/*` (UI)
+- 저장소/스키마: `src/infrastructure/storage/schema.ts`, `src/infrastructure/storage/migrations.ts`, `src/infrastructure/storage/db.ts`
 - 도메인 타입 단일 기준: `src/domain/types.ts`
 
 ## 환경 변수
@@ -99,4 +101,3 @@ VITE_VWORLD_API_KEY=your-vworld-api-key
 
 - 일괄 물주기 탭 영역 추가
 - 일부 페이지에서 워터폴 현상 수정
-- indexedDB 구현 코드 세부 구조화화
